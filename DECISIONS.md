@@ -21,3 +21,10 @@
 - **Files:**
   - `AGENTS.md` — added Git + Node.js check/auto-install step
   - `DECISIONS.md` — logged this update
+
+### 2026-11-23 — Define When to Upload to GitHub
+- **What:** Added **When to upload** rule to `AGENTS.md`
+- **Why:** Prevent pushing broken/untested code or pushing without user confirmation
+- **Files:**
+  - `AGENTS.md` — added upload trigger rule
+  - `DECISIONS.md` — logged this update
