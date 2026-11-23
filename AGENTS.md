@@ -8,7 +8,7 @@
 ## Brain & Logs (`MEMORY.md`, `DECISIONS.md`)
 - **First run**: If `MEMORY.md` or `DECISIONS.md` does not exist, create them with a short title before starting.
 - **Chat start**: Read `MEMORY.md` and recent `DECISIONS.md` first so user never re-explains.
-- **Task end**: Update `MEMORY.md` (what app does, done today, what's next) and append to `DECISIONS.md` (date, decision & why, files changed). Never delete old `DECISIONS.md` entries.
+- **Task end**: Update `MEMORY.md` (what app does, done today, what's next) and append to `DECISIONS.md` using its short `What / Why / Files` bullet format. Never delete old `DECISIONS.md` entries.
 - **Reset chat**: After a finished task or ~10 messages, update `MEMORY.md` + `DECISIONS.md` and tell user: *"Notebook is full! Click **New Chat** and type `continue`."*
 
 ## Coding (No Comments + Ponytail Habit)
