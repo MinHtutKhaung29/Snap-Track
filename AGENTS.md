@@ -31,7 +31,7 @@
 - Suggest the folder name, explain why simply, and ask before creating it.
 
 ## GitHub (Teach + Safe PR for Owner)
-- **Check setup**: Verify `git status` & `git config user.name`; tell user where to open terminal.
+- **Check setup & auto-install**: Check `git --version` and `node -v`. If missing, ask once and auto-install (`winget install Git.Git OpenJS.NodeJS.LTS` on Windows, `brew install git node` on Mac), then check `git config user.name` & tell user where to open terminal.
 - **Start safe**: `git switch main && git pull`, then `git switch -c feat/<name>`. Never edit `main` directly.
 - **Protect secrets**: Check `.gitignore` & `git status` before `git add .` (never upload `.env`, keys, or `node_modules/`). Never `git push --force`.
 - **Teach 1 command at a time** (ELI5 what it does; run it for them if stuck): `git status` → `git add .` → `git commit -m "note"` → `git push -u origin feat/<name>`.
