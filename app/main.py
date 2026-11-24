@@ -1,16 +1,25 @@
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from jinja2 import ChoiceLoader, Environment, FileSystemLoader, select_autoescape
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.shared import db
+from app.login import routes as login_routes
+from app.shared import auth, csrf, db
 from app.shared.config import settings
 
 BASE = Path(__file__).resolve().parent
-templates = Jinja2Templates(directory=str(BASE / "shared" / "templates"))
+TEMPLATE_DIRS = [BASE / "shared" / "templates", BASE / "login" / "templates"]
+
+
+def build_templates():
+    loaders = [FileSystemLoader(str(d)) for d in TEMPLATE_DIRS if d.is_dir()]
+    env = Environment(loader=ChoiceLoader(loaders), autoescape=select_autoescape(["html", "xml"]))
+    return Jinja2Templates(env=env)
+
 
 app = FastAPI(title="Snap & Track", docs_url="/docs", redoc_url=None)
 app.add_middleware(
@@ -21,6 +30,8 @@ app.add_middleware(
     same_site="lax",
 )
 app.mount("/static", StaticFiles(directory=str(BASE / "static")), name="static")
+app.state.templates = build_templates()
+app.include_router(login_routes.router)
 
 
 @app.get("/health")
@@ -28,7 +39,7 @@ def health():
     try:
         info = db.health()
     except Exception as exc:
-        return JSONResponse({"status": "error", "db": str(type(exc).__name__)}, status_code=503)
+        return JSONResponse({"status": "error", "db": type(exc).__name__}, status_code=503)
     info["status"] = "ok"
     info["model"] = settings.gemini_model
     return info
@@ -36,9 +47,16 @@ def health():
 
 @app.get("/")
 def home(request: Request):
+    user = auth.current_user(request)
+    if user is None:
+        return RedirectResponse("/login", status_code=303)
     try:
         info = db.health()
     except Exception:
         info = {"version": "unreachable", "tables": 0}
     info["model"] = settings.gemini_model
-    return templates.TemplateResponse(request, "home.html", {"health": info})
+    return app.state.templates.TemplateResponse(
+        request,
+        "home.html",
+        {"user": user, "health": info, "csrf_token": csrf.issue_token(request)},
+    )

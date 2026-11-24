@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}ログイン — Snap &amp; Track{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>ログイン</h1>
+  {% if error %}<p class="err">{{ error }}</p>{% endif %}
+  <form method="post" action="/login" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>メールアドレス<input type="email" name="email" value="{{ email }}" required autocomplete="email"></label>
+    <label>パスワード<input type="password" name="password" required autocomplete="current-password"></label>
+    <button type="submit">ログイン</button>
+  </form>
+  <p class="hint">アカウントが無い場合は <a href="/register">新規登録</a></p>
+</section>
+{% endblock %}
