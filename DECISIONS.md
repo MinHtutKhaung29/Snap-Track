@@ -50,3 +50,14 @@
   - templates and CSS are created with the shell for the same reason: the guard cannot scan `.html`/`.css`
   - `documents/`, `uploads/`, `.venv/` are gitignored so school PDFs, real receipts and secrets never leave the machine
 - **Files:** `db/schema.py`, `db/provision.py`, `db/install.py`, `app/main.py`, `app/shared/*`, `requirements.txt`, `README.md`, `.gitignore`
+
+### 2026-11-24 — P1 chat spine + auth scaffold
+- **What:** one chat thread that files money, behind a deterministic confirmation gate
+- **Why:** this is the product; everything else is decoration around it
+- **Decisions:**
+  - The gate is a **server-side string check**, not a model self-report: the proposed amount must appear in the user's own digits, and the date must be explicit (今日/昨日/YYYY-MM-DD/M月D日). Otherwise nothing is written and a confirm card appears. Proven by test: 「先週の金曜 ランチ 1200円」 writes 0 rows until 保存 is pressed.
+  - The AI returns tool calls only; it never receives `user_id`, never writes SQL, and every argument is re-validated on confirm (defence in depth).
+  - `AI_MODE=stub` exists so server tests never depend on the network or on quota. Stub mode tests **our** logic; model accuracy is measured separately in `docs/p005-technical-validation.md`.
+  - Login was built as a scaffold behind `app/shared/auth.py` because Siwani owns the login **screens**. Her HTML drops into `app/login/templates/` and wins automatically; no feature code touches `session` directly.
+  - Passwords verified as scrypt in the database (`len=114`), cookie verified `httponly; samesite=lax`.
+- **Files:** `app/chat/*`, `app/shared/ai.py`, `app/shared/auth.py`, `app/shared/csrf.py`, `app/login/*`, `tests/smoke_auth.py`, `tests/smoke_chat.py`, `tools/make_assets.py`, `tools/make_chat_assets.py`

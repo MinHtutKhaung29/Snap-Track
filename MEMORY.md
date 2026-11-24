@@ -10,6 +10,7 @@ Snap-Track: an app that tracks your money by taking a photo or by talking to one
 - 2026-11-24: Repo cloned into this folder with real history; `documents/`, `uploads/`, `.env`, `.venv/` are gitignored. Work is on branch `feat/p0-base`.
 
 ## Next Steps
-- P1 chat spine: login/register, one chat thread, deterministic confirm gate, `record_expense`/`record_income`, 24 h undo.
-- Re-run the 技術検証 on the owner's own 10 receipts (P0.5 still open on that side).
-- Commit P0 on `feat/p0-base` and open a pull request; do not merge without the owner.
+- P1 chat spine: **done and tested 9/9** — sentence → tool call → row → undo. Gate proven: 「先週の金曜 ランチ 1200円」 writes nothing until confirmed.
+- **Blocker for real AI:** the Gemini key currently in `.env` is an ephemeral access token that expired. A real `AIza...` key from aistudio.google.com/apikey is needed before the live path works. Tests run with `AI_MODE=stub` in the meantime.
+- P2 photo + swipe card, P3 commitments, P4 ask & remember.
+- Commit P1 on `feat/p1-auth` and push after PR #1 merges; do not merge without the owner.
