@@ -2,6 +2,7 @@ import json
 import re
 import unicodedata
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
@@ -31,18 +32,30 @@ def generate(system, contents, tools=None, timeout=60):
     if tools:
         body["tools"] = [{"functionDeclarations": tools}]
     request = urllib.request.Request(
-        ENDPOINT.format(model=settings.gemini_model),
+        ENDPOINT.format(model=settings.gemini_model) + "?key=" + urllib.parse.quote(settings.gemini_api_key, safe=""),
         data=json.dumps(body).encode("utf-8"),
-        headers={"Content-Type": "application/json", "x-goog-api-key": settings.gemini_api_key},
+        headers={"Content-Type": "application/json"},
         method="POST",
     )
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        raise AIError("http_" + str(exc.code), exc.read().decode("utf-8", "replace")[:300])
-    except Exception as exc:
-        raise AIError(type(exc).__name__, str(exc)[:300])
+    last = None
+    for attempt, wait in enumerate((timeout, timeout * 2, timeout * 2), start=1):
+        try:
+            with urllib.request.urlopen(request, timeout=wait) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+            break
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", "replace")[:300]
+            if 500 <= exc.code < 600 and attempt < 3:
+                last = AIError("http_" + str(exc.code), body)
+                continue
+            raise AIError("http_" + str(exc.code), body)
+        except Exception as exc:
+            last = AIError(type(exc).__name__, str(exc)[:300])
+            if attempt < 3:
+                continue
+            raise last
+    else:
+        raise last or AIError("retries_exhausted")
     candidates = payload.get("candidates") or [{}]
     content = candidates[0].get("content") or {}
     parts = content.get("parts") or []
