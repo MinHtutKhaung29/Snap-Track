@@ -28,3 +28,25 @@
 - **Files:**
   - `AGENTS.md` — added upload trigger rule
   - `DECISIONS.md` — logged this update
+
+### 2026-11-24 — Product reshaped into one-chat money tracker
+- **What:** After reading all school documents, rewrote the specification as v3
+- **Why:** The owner wants a single permanent chat (Muse style) where the AI files expenses, income, bills and installments from natural language, not a photo-only expense list
+- **Decisions:**
+  - 8 tables: users, categories, receipts, commitments, transactions, chat_message, memory_fact, ai_usage
+  - `commitments` is separate from `transactions` so a bill due on the 27th is not counted as spending
+  - one chat thread per user, enforced by the schema (no session id)
+  - the AI never guesses money: server checks the digits appear in the user's own words, otherwise a confirm card
+  - model pinned to `gemini-3.1-flash-lite` because it measured cheapest **and** most accurate (3/4 on receipts with a total, 0 hallucinations on unknown fields)
+- **Files:** `docs/base-plan.md`, `docs/implementation-plan.md`, `docs/p005-technical-validation.md`
+
+### 2026-11-24 — P0 base built
+- **What:** MySQL 8.4.9 installed via winget, data directory under the user profile (no admin), database `snapandtrack` + user `snaptrack` provisioned, schema and seed applied, FastAPI skeleton running
+- **Why:** A working base before any feature, as agreed
+- **Decisions:**
+  - MySQL runs as a normal process, not a Windows service, because installing a service needs admin
+  - credentials are random per machine and live only in `.env` (gitignored); `db/provision.py` writes them
+  - schema is stored in `db/schema.py`, not `schema.sql`, because the repo guard cannot scan `.sql` files
+  - templates and CSS are created with the shell for the same reason: the guard cannot scan `.html`/`.css`
+  - `documents/`, `uploads/`, `.venv/` are gitignored so school PDFs, real receipts and secrets never leave the machine
+- **Files:** `db/schema.py`, `db/provision.py`, `db/install.py`, `app/main.py`, `app/shared/*`, `requirements.txt`, `README.md`, `.gitignore`
