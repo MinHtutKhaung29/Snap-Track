@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Snap &amp; Track — ホーム{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Snap &amp; Track</h1>
+  <p class="lead">レシートを撮るか、チャットに話しかけるだけ。</p>
+  <dl class="status">
+    <dt>DB</dt><dd class="{{ 'ok' if health.db else 'ng' }}">{{ health.version }}</dd>
+    <dt>テーブル</dt><dd>{{ health.tables }} / 8</dd>
+    <dt>モデル</dt><dd>{{ health.model }}</dd>
+  </dl>
+  <p class="hint">この画面は P0 の動作確認用です。ログインとチャットは次のフェーズで入ります。</p>
+</section>
+{% endblock %}

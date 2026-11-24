@@ -6,3 +6,12 @@ __pycache__/
 .DS_Store
 dist/
 build/
+
+# private: school handouts, real receipt photos, student names and IDs
+documents/
+uploads/
+
+# local tooling
+.venv/
+*.log
+.tmp_models.json
