@@ -3,6 +3,7 @@ import unicodedata
 from datetime import date, datetime, timedelta, timezone
 
 from app.shared import db
+from app.shared.format import jp_date
 
 JST = timezone(timedelta(hours=9))
 MAX_AMOUNT = 10_000_000
@@ -16,7 +17,7 @@ TOOL_DECLS = [
             "properties": {
                 "amount": {"type": "integer", "description": "whole yen, positive"},
                 "date": {"type": "string", "description": "YYYY-MM-DD"},
-                "source": {"type": "string", "description": "shop or payee, may be empty"},
+                "source": {"type": "string", "description": "the shop, the item, or what the user called it (e.g. ランチ, コンビニ); empty only if the user gave nothing"},
                 "category_code": {"type": "string", "enum": ["food", "transport", "daily", "social", "utility", "other"]},
                 "memo": {"type": "string"},
             },
@@ -176,6 +177,7 @@ def execute(name, args, user_id):
             "kind": args["kind"],
             "amount": args["amount"],
             "date": args["txn_date"].isoformat(),
+            "date_label": jp_date(args["txn_date"]),
             "source": args["source"],
             "category": args["category"]["category_name"],
         }

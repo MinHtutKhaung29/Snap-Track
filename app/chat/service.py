@@ -119,9 +119,10 @@ def handle_turn(user_id, text):
             "date": normalized["txn_date"].isoformat(),
             "source": normalized["source"],
             "category": normalized["category"]["category_name"],
+            "date_label": toolbox.jp_date(normalized["txn_date"]),
             "reason": reason,
         }
-        body = "確認してください: " + describe(preview)
+        body = "この内容で記録しますか？"
         store(
             user_id,
             "assistant",
@@ -141,8 +142,20 @@ def tool_defs():
 
 
 def describe(item):
-    parts = [item.get("date", ""), item.get("source") or "店名なし", "¥" + str(item.get("amount")), item.get("category", "")]
-    return " / ".join(p for p in parts if p)
+    parts = [
+        item.get("date_label") or item.get("date", ""),
+        item.get("source") or "内容未入力",
+        item.get("category", ""),
+        "¥" + contract_amount(item.get("amount")),
+    ]
+    return "・".join(p for p in parts if p)
+
+
+def contract_amount(value):
+    try:
+        return "{:,}".format(int(value))
+    except (TypeError, ValueError):
+        return str(value)
 
 
 def format_answer(data):
