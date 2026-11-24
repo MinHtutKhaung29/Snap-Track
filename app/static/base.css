@@ -27,3 +27,23 @@ h1{margin:0 0 6px;font-size:22px}
 .who form{margin:0}
 .linkbtn{background:none;border:0;color:#60a5fa;font:inherit;padding:0;cursor:pointer}
 @media (max-width:420px){.wrap{padding:14px}.card{padding:16px}}
+.thread{display:flex;flex-direction:column;gap:10px;padding-bottom:90px}
+.msg{max-width:86%;padding:10px 14px;border-radius:16px;font-size:15px;line-height:1.55}
+.msg p{margin:0}
+.msg.me{align-self:flex-end;background:#2563eb;color:#fff;border-bottom-right-radius:6px}
+.msg.bot{align-self:flex-start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:6px}
+.msg .ex{margin-top:6px;color:var(--muted);font-size:13px}
+.composer{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(15,23,42,.95);border-top:1px solid var(--line);backdrop-filter:blur(8px)}
+.composer input{flex:1;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:#0d1526;color:var(--fg);font-size:16px}
+.composer button{padding:13px 18px;border:0;border-radius:12px;background:#2563eb;color:#fff;font-weight:600;font-size:15px}
+.card.mini{margin-top:10px;padding:12px;border-radius:12px;background:#0d1526;border:1px solid var(--line)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0 0 10px;font-size:14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-variant-numeric:tabular-nums}
+.row{display:flex;gap:8px}
+.row form{margin:0;flex:1}
+.row button{width:100%;padding:11px;border:0;border-radius:10px;background:#16a34a;color:#fff;font-weight:600;font-size:15px}
+.ghost{background:transparent!important;border:1px solid var(--line)!important;color:var(--muted)!important;font-weight:500!important}
+.inline{margin:8px 0 0}
+.inline button{padding:7px 12px;border-radius:8px;font-size:13px}
+.warn{margin:8px 0 0;font-size:13px;color:#fbbf24}

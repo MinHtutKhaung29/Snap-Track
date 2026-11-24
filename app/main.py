@@ -7,12 +7,17 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import ChoiceLoader, Environment, FileSystemLoader, select_autoescape
 from starlette.middleware.sessions import SessionMiddleware
 
+from app.chat import routes as chat_routes
 from app.login import routes as login_routes
 from app.shared import auth, csrf, db
 from app.shared.config import settings
 
 BASE = Path(__file__).resolve().parent
-TEMPLATE_DIRS = [BASE / "shared" / "templates", BASE / "login" / "templates"]
+TEMPLATE_DIRS = [
+    BASE / "shared" / "templates",
+    BASE / "login" / "templates",
+    BASE / "chat" / "templates",
+]
 
 
 def build_templates():
@@ -32,6 +37,7 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory=str(BASE / "static")), name="static")
 app.state.templates = build_templates()
 app.include_router(login_routes.router)
+app.include_router(chat_routes.router)
 
 
 @app.get("/health")
@@ -47,6 +53,14 @@ def health():
 
 @app.get("/")
 def home(request: Request):
+    user = auth.current_user(request)
+    if user is None:
+        return RedirectResponse("/login", status_code=303)
+    return RedirectResponse("/chat", status_code=303)
+
+
+@app.get("/status")
+def status_page(request: Request):
     user = auth.current_user(request)
     if user is None:
         return RedirectResponse("/login", status_code=303)

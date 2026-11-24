@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}チャット — Snap &amp; Track{% endblock %}
+{% block nav %}
+  <span class="who">{{ user.name }}
+    <form method="post" action="/logout">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="linkbtn">ログアウト</button>
+    </form>
+  </span>
+{% endblock %}
+{% block content %}
+<section class="thread" id="thread">
+  {% if not messages %}
+  <div class="msg bot"><p>こんにちは。例のように話しかけてください。</p><p class="ex">「今日 ランチ 850円」<br>「今月の食費いくら?」</p></div>
+  {% endif %}
+  {% for m in messages %}
+    {% if m.role == "user" %}
+    <div class="msg me"><p>{{ m.body }}</p></div>
+    {% else %}
+    <div class="msg bot">
+      <p>{{ m.body }}</p>
+      {% if m.payload and m.payload.type == "saved" and m.payload.txn %}
+      <form method="post" action="/undo/{{ m.payload.txn.txn_id }}" class="inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="ghost">元に戻す</button>
+      </form>
+      {% elif m.payload and m.payload.type == 'proposal' and m.payload.status == 'pending' %}
+      <div class="card mini">
+        <dl class="kv">
+          <dt>金額</dt><dd>¥{{ m.payload.preview.amount }}</dd>
+          <dt>日付</dt><dd>{{ m.payload.preview.date }}</dd>
+          <dt>内容</dt><dd>{{ m.payload.preview.source or '店名なし' }}</dd>
+          <dt>分類</dt><dd>{{ m.payload.preview.category }}</dd>
+        </dl>
+        {% if m.payload.preview.reason == "date_inferred" %}<p class="warn">日付は推測です。確認してください。</p>{% endif %}
+        {% if m.payload.preview.reason == "amount_not_in_message" %}<p class="warn">金額がメッセージにありません。</p>{% endif %}
+        <div class="row">
+          <form method="post" action="/chat/confirm/{{ m.message_id }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit">保存する</button>
+          </form>
+          <form method="post" action="/chat/cancel/{{ m.message_id }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="ghost">キャンセル</button>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  {% endfor %}
+</section>
+<form method="post" action="/chat" class="composer">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="text" name="message" placeholder="今日 ランチ 850円" autocomplete="off" required autofocus>
+  <button type="submit">送信</button>
+</form>
+{% endblock %}
+{% block foot %}
+<script>var t=document.getElementById('thread');if(t){window.scrollTo(0,document.body.scrollHeight);}</script>
+{% endblock %}
