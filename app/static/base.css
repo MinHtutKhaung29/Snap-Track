@@ -2,8 +2,9 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 -apple-system,"Segoe UI",system-ui,"Hiragino Sans","Yu Gothic",sans-serif;-webkit-text-size-adjust:100%}
 .top{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(15,23,42,.92);backdrop-filter:blur(8px)}
-.brand{color:var(--fg);text-decoration:none;font-weight:700;letter-spacing:.01em}
-.nav a{color:var(--muted);text-decoration:none;margin-left:14px;font-size:14px}
+.brand{color:var(--fg);text-decoration:none;font-weight:700}
+.nav{display:flex;align-items:center;gap:12px}
+.nav a{color:var(--muted);text-decoration:none;font-size:14px}
 .wrap{max-width:640px;margin:0 auto;padding:18px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
 h1{margin:0 0 6px;font-size:22px}
@@ -13,6 +14,16 @@ h1{margin:0 0 6px;font-size:22px}
 .status dd{margin:0;font-variant-numeric:tabular-nums}
 .ok{color:var(--ok)}
 .ng{color:var(--ng)}
-.hint{margin:0;font-size:13px;color:var(--muted)}
+.hint{margin:12px 0 0;font-size:13px;color:var(--muted)}
 .foot{max-width:640px;margin:0 auto;padding:8px 18px 28px;color:var(--muted);font-size:12px}
+.form{display:grid;gap:12px}
+.form label{display:grid;gap:6px;font-size:14px;color:var(--muted)}
+.form input{padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:#0d1526;color:var(--fg);font-size:16px}
+.form input:focus{outline:2px solid #3b82f6;outline-offset:1px}
+.form button{margin-top:6px;padding:13px 16px;border:0;border-radius:10px;background:#2563eb;color:#fff;font-size:16px;font-weight:600}
+.err{margin:0 0 14px;padding:10px 12px;border-radius:10px;background:#3b1d24;color:#fca5a5;font-size:14px}
+.hint a{color:#60a5fa}
+.who{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.who form{margin:0}
+.linkbtn{background:none;border:0;color:#60a5fa;font:inherit;padding:0;cursor:pointer}
 @media (max-width:420px){.wrap{padding:14px}.card{padding:16px}}
