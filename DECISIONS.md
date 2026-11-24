@@ -61,3 +61,13 @@
   - Login was built as a scaffold behind `app/shared/auth.py` because Siwani owns the login **screens**. Her HTML drops into `app/login/templates/` and wins automatically; no feature code touches `session` directly.
   - Passwords verified as scrypt in the database (`len=114`), cookie verified `httponly; samesite=lax`.
 - **Files:** `app/chat/*`, `app/shared/ai.py`, `app/shared/auth.py`, `app/shared/csrf.py`, `app/login/*`, `tests/smoke_auth.py`, `tests/smoke_chat.py`, `tools/make_assets.py`, `tools/make_chat_assets.py`
+
+### 2026-11-24 — Gemini transport: three bugs the live run exposed
+- **What:** first end-to-end run of the app against the real Gemini API
+- **Why:** the stub proved our logic; only a live call could prove the wiring
+- **Findings:**
+  - `x-goog-api-key` header is rejected for this credential (`ACCESS_TOKEN_TYPE_UNSUPPORTED`); the key must be sent as `?key=`. Same key returned 200 as a query parameter and 401 as a header — the earlier "expired key" diagnosis was wrong.
+  - `load_dotenv` does not override existing environment variables, so the app silently used the shell's `GEMINI_API_KEY` (a different token). `config.py` now passes `override=True`: for an app, `.env` is authoritative.
+  - a 60 s timeout failed a valid turn, so `ai.generate` retries three times with backoff on timeouts and 5xx.
+- **Result:** 9/9 end-to-end checks pass against real Gemini, including the gate holding a `先週` request as a proposal and the final answer being numerically correct (¥1,200 after undoing ¥850).
+- **Files:** `app/shared/ai.py`, `app/shared/config.py`, `tests/smoke_chat.py`, `tools/repro_request.py`, `tools/set_env_value.py`

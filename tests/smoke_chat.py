@@ -135,7 +135,12 @@ def main():
 
     status, html = post(op, "/chat", {"message": "今月の食費いくら?", "csrf_token": token})
     _, page = get(op, "/chat")
-    record("query answers with a total", "合計" in page and "850" not in page.split("合計")[1][:12], "page looks numeric")
+    tail = page.split("合計")[-1][:24]
+    record(
+        "query answers with the correct total",
+        "合計" in page and "1200" in tail and "850" not in tail,
+        "answer tail=" + tail.replace("\n", " ")[:40],
+    )
 
     passed = sum(1 for _, p, _ in results if p)
     print()
