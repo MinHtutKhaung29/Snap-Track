@@ -24,10 +24,13 @@ def chat_page(request: Request):
     if user is None:
         return RedirectResponse("/login", status_code=303)
     messages = service.thread(_uid(user))
+    categories = db.fetch_all(
+        "SELECT code, category_name FROM categories WHERE kind = 'expense' ORDER BY sort_order"
+    )
     return _templates(request).TemplateResponse(
         request,
         "chat.html",
-        {"user": user, "messages": messages, "csrf_token": csrf.issue_token(request)},
+        {"user": user, "messages": messages, "categories": categories, "csrf_token": csrf.issue_token(request)},
     )
 
 
@@ -42,7 +45,14 @@ def chat_send(request: Request, message: str = Form(""), csrf_token: str = Form(
 
 
 @router.post("/chat/confirm/{message_id}")
-def chat_confirm(request: Request, message_id: int, csrf_token: str = Form("")):
+def chat_confirm(
+    request: Request,
+    message_id: int,
+    amount: str = Form(""),
+    date: str = Form(""),
+    category_code: str = Form(""),
+    csrf_token: str = Form(""),
+):
     csrf.verify_token(request, csrf_token)
     user = auth.current_user(request)
     if user is None:
@@ -56,8 +66,15 @@ def chat_confirm(request: Request, message_id: int, csrf_token: str = Form("")):
     payload = json.loads(row["payload"]) if isinstance(row["payload"], str) else row["payload"]
     if payload.get("type") != "proposal" or payload.get("status") != "pending":
         return RedirectResponse("/chat", status_code=303)
+    raw_args = dict(payload.get("raw_args") or {})
+    if amount.strip():
+        raw_args["amount"] = amount.strip()
+    if date.strip():
+        raw_args["date"] = date.strip()
+    if category_code.strip():
+        raw_args["category_code"] = category_code.strip()
     try:
-        normalized = toolbox.validate(payload["tool"], payload["raw_args"])
+        normalized = toolbox.validate(payload["tool"], raw_args)
         saved = toolbox.execute(payload["tool"], normalized, _uid(user))
     except toolbox.ToolError:
         db.execute(
@@ -71,7 +88,6 @@ def chat_confirm(request: Request, message_id: int, csrf_token: str = Form("")):
         (body, json.dumps({"type": "saved", "txn": saved}, ensure_ascii=False), message_id, _uid(user)),
     )
     return RedirectResponse("/chat", status_code=303)
-
 
 @router.post("/chat/cancel/{message_id}")
 def chat_cancel(request: Request, message_id: int, csrf_token: str = Form("")):
@@ -104,5 +120,16 @@ def undo(request: Request, txn_id: int, csrf_token: str = Form("")):
         "UPDATE transactions SET deleted_at = NOW() WHERE txn_id = %s AND user_id = %s AND deleted_at IS NULL",
         (txn_id, _uid(user)),
     )
-    service.store(_uid(user), "assistant", "取り消しました。", {"type": "text"})
+    row = db.fetch_one(
+        "SELECT message_id, payload FROM chat_message WHERE user_id = %s "
+        "AND JSON_EXTRACT(payload, '$.txn.txn_id') = %s ORDER BY message_id DESC LIMIT 1",
+        (_uid(user), txn_id),
+    )
+    if row:
+        payload = json.loads(row["payload"]) if isinstance(row["payload"], str) else row["payload"]
+        payload["type"] = "undone"
+        db.execute(
+            "UPDATE chat_message SET body = %s, payload = %s WHERE message_id = %s AND user_id = %s",
+            ("取り消しました。", json.dumps(payload, ensure_ascii=False), row["message_id"], _uid(user)),
+        )
     return RedirectResponse("/chat", status_code=303)
