@@ -1,0 +1,16 @@
+{
+  "name": "snapandtrack",
+  "base_url": "http://127.0.0.1:8010",
+  "health_path": "/health",
+  "ready_json_assertions": {
+    "status": "ok",
+    "tables": 8
+  },
+  "launch_command": "./.venv/Scripts/python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8010 --app-dir .",
+  "evidence_dir": "documents/_extract/verify",
+  "journeys_dir": ".verify/journeys",
+  "python": "./.venv/Scripts/python.exe",
+  "cleanup_command": "./.venv/Scripts/python.exe .verify/cleanup.py",
+  "ready_timeout_seconds": 180,
+  "evidence_port": 18080
+}

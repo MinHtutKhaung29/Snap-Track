@@ -137,17 +137,4 @@ def write(rel, content):
 
 
 write(os.path.join("app", "receipts", "templates", "receipts.html"), RECEIPTS)
-
-css_path = os.path.join(ROOT, "app", "static", "base.css")
-with open(css_path, encoding="utf-8") as f:
-    css = f.read()
-marker = ".queue{"
-if marker in css:
-    css = css[: css.index(marker)] + CSS
-    with open(css_path, "w", encoding="utf-8", newline="\n") as f:
-        f.write(css)
-    print("updated receipt css")
-else:
-    with open(css_path, "a", encoding="utf-8", newline="\n") as f:
-        f.write(CSS)
-    print("appended receipt css")
+write(os.path.join("app", "static", "receipts.css"), CSS)

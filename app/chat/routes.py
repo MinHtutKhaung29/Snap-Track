@@ -1,7 +1,7 @@
 import json
 
 from fastapi import APIRouter, Form, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.chat import service
 from app.shared import auth, csrf, db
@@ -31,6 +31,36 @@ def chat_page(request: Request):
         "chat.html",
         {"user": user, "messages": messages, "categories": categories, "csrf_token": csrf.issue_token(request)},
     )
+
+
+@router.post("/chat/send")
+def chat_send_json(request: Request, message: str = Form(""), csrf_token: str = Form("")):
+    csrf.verify_token(request, csrf_token)
+    user = auth.current_user(request)
+    if user is None:
+        return JSONResponse({"ok": False, "error": "auth"}, status_code=401)
+    uid = _uid(user)
+    before = db.fetch_one(
+        "SELECT COALESCE(MAX(message_id), 0) AS m FROM chat_message WHERE user_id = %s", (uid,)
+    )
+    result = service.handle_turn(uid, message)
+    rows = db.fetch_all(
+        "SELECT message_id, role, body, payload, created_at FROM chat_message "
+        "WHERE user_id = %s AND message_id > %s ORDER BY message_id",
+        (uid, before["m"]),
+    )
+    for row in rows:
+        if isinstance(row["payload"], str):
+            try:
+                row["payload"] = json.loads(row["payload"])
+            except ValueError:
+                row["payload"] = None
+    categories = db.fetch_all(
+        "SELECT code, category_name FROM categories WHERE kind = 'expense' ORDER BY sort_order"
+    )
+    partial = request.app.state.templates.env.get_template("_msg.html")
+    html = "".join(partial.render(m=row, csrf_token=csrf_token, categories=categories) for row in rows)
+    return JSONResponse({"ok": bool(result.get("ok")), "type": result.get("type"), "html": html})
 
 
 @router.post("/chat")

@@ -2,6 +2,7 @@
 {% block title %}チャット — Snap &amp; Track{% endblock %}
 {% block nav %}
   <span class="who"><span class="uname">{{ user.name }}</span>
+    <a class="linkbtn" href="/receipts">レシート</a>
     <form method="post" action="/logout">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <button type="submit" class="linkbtn">ログアウト</button>
@@ -20,71 +21,7 @@
   </div>
   {% endif %}
   {% for m in messages %}
-    {% set p = m.payload %}
-    {% if m.role == "user" %}
-    <div class="msg me"><p>{{ m.body }}</p></div>
-    {% elif p and p.type == "saved" and p.txn %}
-    <div class="msg bot entry">
-      <div class="label">記録しました</div>
-      <div class="amt">¥{{ "{:,}".format(p.txn.amount) }}</div>
-      <div class="meta"><span>{{ p.txn.category }}</span><span class="pill">{{ p.txn.source or "未入力" }}</span><span class="sub">{{ p.txn.date_label }}</span></div>
-      <form method="post" action="/undo/{{ p.txn.txn_id }}" class="inline">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button type="submit" class="ghost">取り消す</button>
-      </form>
-    </div>
-    {% elif p and p.type == "undone" and p.txn %}
-    <div class="msg bot entry undone">
-      <div class="label">取り消し済み</div>
-      <div class="amt strike">¥{{ "{:,}".format(p.txn.amount) }}</div>
-      <div class="meta"><span>{{ p.txn.category }}</span><span class="sub">{{ p.txn.date_label }}</span></div>
-    </div>
-    {% elif p and p.type == "proposal" and p.status == "pending" %}
-    <div class="msg bot entry pending">
-      <div class="label">この内容で記録しますか？</div>
-      <div class="amt">¥{{ "{:,}".format(p.preview.amount) }}</div>
-      <div class="meta"><span>{{ p.preview.category }}</span><span class="pill">{{ p.preview.source or "未入力" }}</span></div>
-      <div class="meta"><span class="sub">{{ p.preview.date_label }}</span></div>
-      {% if p.preview.reason == "date_inferred" %}<p class="warn">日付は推測です。違っていれば「直す」で変更できます。</p>{% endif %}
-      {% if p.preview.reason == "amount_not_in_message" %}<p class="warn">金額がメッセージにありません。</p>{% endif %}
-      <div class="row">
-        <form method="post" action="/chat/confirm/{{ m.message_id }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <button type="submit" class="primary">保存する</button>
-        </form>
-        <form method="post" action="/chat/cancel/{{ m.message_id }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <button type="submit" class="ghost">やめる</button>
-        </form>
-      </div>
-      <details class="edit">
-        <summary>直す</summary>
-        <form method="post" action="/chat/confirm/{{ m.message_id }}" class="form tight">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-          <label>金額<input type="number" name="amount" value="{{ p.preview.amount }}" min="1" inputmode="numeric"></label>
-          <label>日付<input type="date" name="date" value="{{ p.preview.date }}"></label>
-          <label>分類<select name="category_code">
-            {% for c in categories %}<option value="{{ c.code }}" {% if c.category_name == p.preview.category %}selected{% endif %}>{{ c.category_name }}</option>{% endfor %}
-          </select></label>
-          <button type="submit" class="primary">この内容で保存</button>
-        </form>
-      </details>
-    </div>
-    {% elif p and p.type == "answer" and p.data %}
-    <div class="msg bot answer">
-      <div class="label">{{ "支出" if p.data.kind == "expense" else "収入" }}合計<span class="dot">・</span>{{ p.data.from }} 〜 {{ p.data.to }}</div>
-      <div class="amt">¥{{ "{:,}".format(p.data.total) }}</div>
-      {% if p.data.rows|length > 1 %}
-      <ul class="lines">
-        {% for r in p.data.rows %}
-        <li><span>{{ r.category }}</span><span class="num">¥{{ "{:,}".format(r.total) }}</span><em>{{ r.count }}件</em></li>
-        {% endfor %}
-      </ul>
-      {% endif %}
-    </div>
-    {% else %}
-    <div class="msg bot"><p>{{ m.body }}</p></div>
-    {% endif %}
+  {% include "_msg.html" %}
   {% endfor %}
 </section>
 <form method="post" action="/receipts/upload" enctype="multipart/form-data" class="cam">
@@ -93,17 +30,40 @@
     <input type="file" name="photo" accept="image/*" capture="environment" onchange="this.form.submit()">
   </label>
 </form>
-<form method="post" action="/chat" class="composer">
+<form method="post" action="/chat" class="composer" id="chat-form" data-busy="0">
   <div class="composer-inner">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <input type="text" name="message" placeholder="今日 ランチ 850円" autocomplete="off" required autofocus>
-    <button type="submit">送信</button>
+    <button type="submit" id="send-btn">送信</button>
   </div>
 </form>
 {% endblock %}
 {% block foot %}
 <script>
-var t=document.getElementById('thread');if(t){window.scrollTo(0,document.body.scrollHeight);}
-document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){var i=document.querySelector('.composer input[name=message]');i.value=c.dataset.fill;i.focus();});});
+(function(){
+var form=document.getElementById('chat-form'),thread=document.getElementById('thread'),input=form.querySelector('input[name=message]'),btn=document.getElementById('send-btn');
+function bottom(){window.scrollTo(0,document.body.scrollHeight);}
+function bubble(text){var d=document.createElement('div');d.className='msg me';var p=document.createElement('p');p.textContent=text;d.appendChild(p);thread.appendChild(d);}
+function thinking(){var d=document.createElement('div');d.className='msg bot thinking';d.innerHTML='<i></i><i></i><i></i>';thread.appendChild(d);return d;}
+function fail(){var d=document.createElement('div');d.className='msg bot';var p=document.createElement('p');p.textContent='送信できませんでした。通信を確認してもう一度お試しください。';d.appendChild(p);thread.appendChild(d);}
+form.addEventListener('submit',function(e){
+  if(!window.fetch){return;}
+  e.preventDefault();
+  var text=input.value.trim();
+  if(!text||form.dataset.busy==='1'){return;}
+  bubble(text);
+  input.value='';input.focus();bottom();
+  var dots=thinking();bottom();
+  form.dataset.busy='1';btn.disabled=true;
+  var data=new FormData(form);data.set('message',text);
+  fetch('/chat/send',{method:'POST',body:data,headers:{'Accept':'application/json'}})
+    .then(function(r){return r.json();})
+    .then(function(res){dots.remove();if(res.html){thread.insertAdjacentHTML('beforeend',res.html);}else{fail();}})
+    .catch(function(){dots.remove();fail();})
+    .then(function(){form.dataset.busy='0';btn.disabled=false;bottom();});
+});
+document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){input.value=c.dataset.fill;input.focus();});});
+bottom();
+})();
 </script>
 {% endblock %}

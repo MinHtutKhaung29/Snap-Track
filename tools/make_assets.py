@@ -12,6 +12,8 @@ BASE = "\n".join(
         '  <meta name="theme-color" content="#0f172a">',
         "  <title>{% block title %}Snap &amp; Track{% endblock %}</title>",
         '  <link rel="stylesheet" href="/static/base.css">',
+        '  <link rel="stylesheet" href="/static/chat.css">',
+        '  <link rel="stylesheet" href="/static/receipts.css">',
         "</head>",
         "<body>",
         '  <header class="top">',
