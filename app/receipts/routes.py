@@ -106,6 +106,10 @@ def _render_queue(request, user, error_message=None, override=None, status_code=
                 card["date_label"] = jp_date(card["data"]["date"])
             except Exception:
                 card["date_label"] = card["data"]["date"]
+        data = card["data"] or {}
+        if not data.get("shop") and data.get("source"):
+            data["shop"] = data["source"]
+        card["data"] = data
         code = card["data"].get("category_code") or "other"
         card["category_name"] = cat_map.get(code) or cat_map.get("other") or code
         chosen_code = (override or {}).get("category_code") or code
@@ -259,7 +263,7 @@ def save(
     args = {
         "amount": amount or stored.get("amount"),
         "date": resolved_date,
-        "source": shop or stored.get("shop"),
+        "source": shop or stored.get("shop") or stored.get("source"),
         "category_code": category_code or stored.get("category_code") or "other",
     }
     try:
