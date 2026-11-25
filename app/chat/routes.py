@@ -8,6 +8,9 @@ from app.shared import auth, csrf, db
 
 router = APIRouter()
 
+COMMITMENT_CARD_TYPES = ("commitment_proposal", "commitment_payment", "commitment")
+PENDING_TYPES = ("proposal", "commitment_proposal", "commitment_payment")
+
 
 def _templates(request):
     return request.app.state.templates
@@ -58,8 +61,17 @@ def chat_send_json(request: Request, message: str = Form(""), csrf_token: str = 
     categories = db.fetch_all(
         "SELECT code, category_name FROM categories WHERE kind = 'expense' ORDER BY sort_order"
     )
-    partial = request.app.state.templates.env.get_template("_msg.html")
-    html = "".join(partial.render(m=row, csrf_token=csrf_token, categories=categories) for row in rows)
+    env = request.app.state.templates.env
+    default_partial = env.get_template("_msg.html")
+    commitment_partial = env.get_template("_commitment_msg.html")
+    html = "".join(
+        (
+            commitment_partial
+            if isinstance(row.get("payload"), dict) and row["payload"].get("type") in COMMITMENT_CARD_TYPES
+            else default_partial
+        ).render(m=row, csrf_token=csrf_token, categories=categories)
+        for row in rows
+    )
     return JSONResponse({"ok": bool(result.get("ok")), "type": result.get("type"), "html": html})
 
 
@@ -105,7 +117,7 @@ def chat_cancel(request: Request, message_id: int, csrf_token: str = Form("")):
     )
     if row and row["payload"]:
         payload = json.loads(row["payload"]) if isinstance(row["payload"], str) else row["payload"]
-        if payload.get("type") == "proposal" and payload.get("status") == "pending":
+        if payload.get("type") in PENDING_TYPES and payload.get("status") == "pending":
             payload["status"] = "canceled"
             db.execute(
                 "UPDATE chat_message SET body = %s, payload = %s WHERE message_id = %s AND user_id = %s",

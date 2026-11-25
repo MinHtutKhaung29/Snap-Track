@@ -8,6 +8,7 @@ from jinja2 import ChoiceLoader, Environment, FileSystemLoader, select_autoescap
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.chat import routes as chat_routes
+from app.commitments import routes as commitment_routes
 from app.login import routes as login_routes
 from app.receipts import routes as receipt_routes
 from app.shared import auth, csrf, db
@@ -19,6 +20,7 @@ TEMPLATE_DIRS = [
     BASE / "login" / "templates",
     BASE / "chat" / "templates",
     BASE / "receipts" / "templates",
+    BASE / "commitments" / "templates",
 ]
 
 
@@ -41,6 +43,7 @@ app.state.templates = build_templates()
 app.include_router(login_routes.router)
 app.include_router(chat_routes.router)
 app.include_router(receipt_routes.router)
+app.include_router(commitment_routes.router)
 
 
 @app.get("/health")

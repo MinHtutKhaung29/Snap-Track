@@ -1,12 +1,14 @@
 import json
 from datetime import date
 
+from app.commitments import store as commitment_store
 from app.shared import ai, db
 from app.shared.config import settings
 from app.chat import tools as toolbox
 
 HISTORY_LIMIT = 20
 UNDO_EXPIRED_BODY = "24時間を過ぎた記録は取り消せません。"
+COMMITMENT_CONTEXT_LIMIT = 10
 
 SYSTEM = (
     "あなたは個人のお金管理アプリ「Snap & Track」の中のアシスタントです。"
@@ -17,6 +19,48 @@ SYSTEM = (
     "雑談やお金と関係ない質問には、お金の記録を手伝うことだけできると短く答えてください。"
     "返答は日本語で、1〜2文の短い文にしてください。"
 )
+
+COMMITMENT_CONTEXT = (
+    "ユーザーの支払い予定（有効）:\n{lines}\n"
+    "支払ったと報告されたら mark_paid を commitment_id 付きで呼んでください。"
+    "この一覧に無い id を作ってはいけません。支払い予定の登録は create_bill か create_installment です。"
+)
+
+PAYMENT_ERROR_BODY = {
+    "commitment not found": "対象の支払い予定が見つかりません。支払い予定から選んでください。",
+    "commitment is not active": "この支払い予定は完了しています。",
+    "payment is stale": "予定が更新されました。もう一度確認してください。",
+    "payment is not due yet": "支払期日はまだ来ていません。",
+}
+
+
+def schedule_label(kind, due_day, months):
+    if kind == "installment":
+        return "毎月{}日・{}回払い".format(due_day, months)
+    return "毎月{}日".format(due_day)
+
+
+def commitment_lines(rows):
+    lines = []
+    for row in rows:
+        if row["months"] is not None:
+            count = "{}/{}回".format(row["paid_count"], row["months"])
+        else:
+            count = "{}回".format(row["paid_count"])
+        lines.append(
+            "#{} {} ¥{:,} 期日{} {}".format(
+                row["id"], row["title"], row["next_amount"], row["next_due_date"].isoformat(), count
+            )
+        )
+    return lines
+
+
+def system_prompt(user_id):
+    prompt = SYSTEM.format(today=toolbox.today_jst().isoformat())
+    rows = commitment_store.list_commitments(user_id, "active", limit=COMMITMENT_CONTEXT_LIMIT)
+    if not rows:
+        return prompt
+    return prompt + COMMITMENT_CONTEXT.format(lines="\n".join(commitment_lines(rows)))
 
 
 def check_quota(user_id):
@@ -86,7 +130,7 @@ def handle_turn(user_id, text):
     contents = load_history(user_id)
     try:
         bump_quota(user_id)
-        result = ai.generate(SYSTEM.format(today=toolbox.today_jst().isoformat()), contents, tool_defs())
+        result = ai.generate(system_prompt(user_id), contents, tool_defs())
     except ai.AIError as exc:
         store(user_id, "assistant", "AIに接続できませんでした。少し待ってからもう一度お試しください。", {"type": "error", "code": exc.code})
         return {"ok": False, "error": exc.code}
@@ -105,6 +149,15 @@ def handle_turn(user_id, text):
     except toolbox.ToolError as exc:
         store(user_id, "assistant", "うまく理解できませんでした。金額と日付をもう一度教えてください。", {"type": "error", "code": "invalid", "detail": str(exc)})
         return {"ok": False, "error": "invalid"}
+
+    if name in toolbox.CREATION_TOOLS:
+        return propose_creation(user_id, name, args, normalized)
+
+    if name == "list_commitments":
+        return answer_commitments(user_id, normalized)
+
+    if name == "mark_paid":
+        return propose_payment(user_id, normalized)
 
     if name == "query_money":
         data = toolbox.execute("query_money", normalized, user_id)
@@ -138,6 +191,82 @@ def handle_turn(user_id, text):
     return {"ok": True, "type": "saved", "txn": saved}
 
 
+def propose_creation(user_id, name, args, normalized):
+    first_due = commitment_store.first_due_date(normalized["start_date"], normalized["due_day"])
+    total = normalized["total_amount"] if normalized["kind"] == "installment" else normalized["amount"]
+    preview = {
+        "kind": normalized["kind"],
+        "title": normalized["title"],
+        "amount": total,
+        "months": normalized["months"],
+        "due_day": normalized["due_day"],
+        "start_date": normalized["start_date"].isoformat(),
+        "first_due_date": first_due.isoformat(),
+        "first_due_date_label": toolbox.jp_date(first_due),
+        "schedule_label": schedule_label(normalized["kind"], normalized["due_day"], normalized["months"]),
+        "category": normalized["category"]["category_name"],
+    }
+    store(
+        user_id,
+        "assistant",
+        "この内容で支払い予定を作りますか？",
+        {"type": "commitment_proposal", "tool": name, "raw_args": args, "preview": preview, "status": "pending"},
+    )
+    return {"ok": True, "type": "proposal"}
+
+
+def answer_commitments(user_id, normalized):
+    status = normalized["status"]
+    rows = commitment_store.list_commitments(user_id, status)
+    if not rows:
+        body = "支払い予定はありません。" if status == "active" else "該当する支払い予定はありません。"
+    else:
+        lines = []
+        for row in rows:
+            line = "・#{} {} ¥{:,} 期日{}".format(
+                row["id"], row["title"], row["next_amount"], row["next_due_date"].isoformat()
+            )
+            if row["months"] is not None:
+                line += "（{}/{}回）".format(row["paid_count"], row["months"])
+            lines.append(line)
+        body = "\n".join(lines)
+    store(user_id, "assistant", body, {"type": "text"})
+    return {"ok": True, "type": "text"}
+
+
+def propose_payment(user_id, normalized):
+    commitment_id = normalized["commitment_id"]
+    row = commitment_store.get_commitment(user_id, commitment_id)
+    if row is None:
+        body = "その支払い予定は見つかりませんでした。支払い予定から選んでください。"
+        store(user_id, "assistant", body, {"type": "error", "code": "not_found"})
+        return {"ok": False, "error": "not_found"}
+    if row["status"] != "active":
+        body = "この支払い予定は完了しています。"
+        store(user_id, "assistant", body, {"type": "error", "code": "not_active"})
+        return {"ok": False, "error": "not_active"}
+    today = toolbox.today_jst()
+    preview = {
+        "title": row["title"],
+        "amount": row["next_amount"],
+        "due_date": row["next_due_date"].isoformat(),
+        "due_date_label": row["next_due_date_label"],
+        "category": row["category_name"],
+        "date": today.isoformat(),
+        "date_label": toolbox.jp_date(today),
+    }
+    payload = {
+        "type": "commitment_payment",
+        "status": "pending",
+        "commitment_id": commitment_id,
+        "expected_due_date": row["next_due_date"].isoformat(),
+        "expected_last_txn_id": commitment_store.latest_txn_id(user_id, commitment_id),
+        "preview": preview,
+    }
+    store(user_id, "assistant", "この支払いを記録しますか？", payload)
+    return {"ok": True, "type": "proposal"}
+
+
 def confirm(user_id, message_id, overrides):
     with db.cursor(commit=True) as cur:
         cur.execute(
@@ -148,7 +277,13 @@ def confirm(user_id, message_id, overrides):
         if not row or not row["payload"]:
             return None
         payload = json.loads(row["payload"]) if isinstance(row["payload"], str) else row["payload"]
-        if payload.get("type") != "proposal" or payload.get("status") != "pending":
+        if payload.get("status") != "pending":
+            return None
+        if payload.get("type") == "commitment_payment":
+            return confirm_payment(cur, user_id, message_id, payload)
+        if payload.get("type") == "commitment_proposal":
+            return confirm_creation(cur, user_id, message_id, payload)
+        if payload.get("type") != "proposal":
             return None
         raw_args = dict(payload.get("raw_args") or {})
         for key, value in (overrides or {}).items():
@@ -168,6 +303,90 @@ def confirm(user_id, message_id, overrides):
             "UPDATE chat_message SET body = %s, payload = %s WHERE message_id = %s AND user_id = %s",
             (body, json.dumps({"type": "saved", "txn": saved}, ensure_ascii=False), message_id, user_id),
         )
+    return saved
+
+
+def update_message(cur, user_id, message_id, body, payload):
+    cur.execute(
+        "UPDATE chat_message SET body = %s, payload = %s WHERE message_id = %s AND user_id = %s",
+        (body, json.dumps(payload, ensure_ascii=False), message_id, user_id),
+    )
+    if cur.rowcount != 1:
+        raise commitment_store.CommitmentError("proposal update failed")
+
+
+def confirm_creation(cur, user_id, message_id, payload):
+    try:
+        normalized = toolbox.validate(payload["tool"], dict(payload.get("raw_args") or {}))
+    except toolbox.ToolError as exc:
+        update_message(
+            cur,
+            user_id,
+            message_id,
+            "支払い予定を作成できませんでした。内容をもう一度教えてください。",
+            {"type": "error", "code": "invalid", "detail": str(exc)},
+        )
+        return None
+    spec = {
+        "kind": normalized["kind"],
+        "title": normalized["title"],
+        "amount": normalized["amount"],
+        "total_amount": normalized["total_amount"],
+        "months": normalized["months"],
+        "due_day": normalized["due_day"],
+        "start_date": normalized["start_date"],
+        "category_id": normalized["category"]["category_id"],
+        "category_name": normalized["category"]["category_name"],
+    }
+    try:
+        created = commitment_store.create_commitment(cur, user_id, spec)
+    except commitment_store.CommitmentError as exc:
+        update_message(
+            cur,
+            user_id,
+            message_id,
+            "支払い予定を作成できませんでした。内容をもう一度教えてください。",
+            {"type": "error", "code": "invalid", "detail": str(exc)},
+        )
+        return None
+    commitment = {
+        "id": created["id"],
+        "title": created["title"],
+        "kind": created["kind"],
+        "amount": created["total_amount"] if created["kind"] == "installment" else created["amount"],
+        "months": created["months"],
+        "next_due_date": created["next_due_date"].isoformat(),
+        "next_due_date_label": created["next_due_date_label"],
+        "category_name": created["category_name"],
+        "schedule_label": schedule_label(created["kind"], created["due_day"], created["months"]),
+    }
+    body = "支払い予定を作成しました: " + commitment["title"] + " ¥" + contract_amount(commitment["amount"])
+    update_message(cur, user_id, message_id, body, {"type": "commitment", "commitment": commitment})
+    return commitment
+
+
+def confirm_payment(cur, user_id, message_id, payload):
+    try:
+        saved = commitment_store.mark_paid(
+            cur,
+            user_id,
+            int(payload["commitment_id"]),
+            date.fromisoformat(payload["expected_due_date"]),
+            int(payload["expected_last_txn_id"]),
+            "chat",
+        )
+    except (commitment_store.CommitmentError, KeyError, TypeError, ValueError) as exc:
+        code = str(exc) if isinstance(exc, commitment_store.CommitmentError) else "invalid"
+        update_message(
+            cur,
+            user_id,
+            message_id,
+            PAYMENT_ERROR_BODY.get(code, "支払いを記録できませんでした。"),
+            {"type": "error", "code": code},
+        )
+        return None
+    body = "支払いを記録しました: " + describe(saved)
+    update_message(cur, user_id, message_id, body, {"type": "saved", "txn": saved})
     return saved
 
 
@@ -197,6 +416,12 @@ def save_in_cursor(cur, args, user_id):
 
 
 def undo_transaction(user_id, txn_id):
+    link = db.fetch_one(
+        "SELECT commitment_id FROM transactions WHERE txn_id = %s AND user_id = %s",
+        (txn_id, user_id),
+    )
+    if link and link["commitment_id"] is not None:
+        return undo_commitment_payment(user_id, txn_id)
     with db.cursor(commit=True) as cur:
         cur.execute(
             "UPDATE transactions SET deleted_at = NOW() WHERE txn_id = %s AND user_id = %s "
@@ -218,6 +443,25 @@ def undo_transaction(user_id, txn_id):
             (user_id, UNDO_EXPIRED_BODY, json.dumps({"type": "text"}, ensure_ascii=False)),
         )
         return "expired"
+
+
+def undo_commitment_payment(user_id, txn_id):
+    try:
+        with db.cursor(commit=True) as cur:
+            restored = commitment_store.undo_payment(cur, user_id, txn_id)
+    except commitment_store.CommitmentError as exc:
+        if str(exc) == "payment undo window expired":
+            store(user_id, "assistant", UNDO_EXPIRED_BODY, {"type": "text"})
+            return "expired"
+        return "ignored"
+    if restored is None:
+        return "ignored"
+    try:
+        with db.cursor(commit=True) as cur:
+            mark_undone_in_cursor(cur, user_id, txn_id)
+    except Exception:
+        pass
+    return "undone"
 
 
 def mark_undone_in_cursor(cur, user_id, txn_id):

@@ -1,0 +1,21 @@
+.due{max-width:560px;margin:0 auto;padding-bottom:40px}
+.due h1{margin:0 0 14px;font-size:22px}
+.due .note{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#132a1e;color:#86efac;font-size:13px}
+.due-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.due-row{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.due-row.overdue{border-color:#b45309}
+.due-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.due-title{font-size:16px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.due-amt{margin-top:6px;font-size:28px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;line-height:1.15}
+.due-meta{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px}
+.due-meta .pill{background:#0d1526;border:1px solid var(--line);color:#cbd5e1;font-size:12px;padding:3px 10px;border-radius:999px}
+.due-meta .sub{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.flag{background:#3b1d24;color:#fca5a5;font-size:12px;padding:3px 10px;border-radius:999px}
+.pay-form{margin:14px 0 0}
+.pay-form button{width:100%;min-height:48px;border:0;border-radius:12px;font-size:15px;font-weight:700;background:#15803d;color:#fff}
+.pay-form button:active{background:#166534}
+.pay-form button:disabled{background:#1e293b;color:var(--muted)}
+.due .hint{margin:8px 0 0;font-size:12.5px;color:var(--muted)}
+.due .empty{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;display:grid;gap:10px}
+.due .empty p{margin:0}
+.due .empty .btn-link{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:12px;background:#2563eb;color:#fff;text-decoration:none;font-weight:700;font-size:15px}

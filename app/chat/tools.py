@@ -1,5 +1,6 @@
 import re
 import unicodedata
+from calendar import monthrange
 from datetime import date, datetime, timedelta, timezone
 
 from app.shared import db
@@ -52,9 +53,78 @@ TOOL_DECLS = [
             "required": ["from", "to", "kind"],
         },
     },
+    {
+        "name": "create_bill",
+        "description": "Create a recurring bill schedule, not a transaction. Use the stated yen amount.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string"},
+                "amount": {"type": "integer"},
+                "due_day": {"type": "integer"},
+                "start_date": {"type": "string", "description": "YYYY-MM-DD"},
+                "category_code": {
+                    "type": "string",
+                    "enum": ["food", "transport", "daily", "social", "utility", "other"],
+                },
+            },
+            "required": ["title", "amount", "due_day", "start_date", "category_code"],
+        },
+    },
+    {
+        "name": "create_installment",
+        "description": "Create a monthly installment schedule, not a transaction. Use the stated total yen amount.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "title": {"type": "string"},
+                "total_amount": {"type": "integer"},
+                "months": {"type": "integer"},
+                "due_day": {"type": "integer"},
+                "start_date": {"type": "string", "description": "YYYY-MM-DD"},
+                "category_code": {
+                    "type": "string",
+                    "enum": ["food", "transport", "daily", "social", "utility", "other"],
+                },
+            },
+            "required": ["title", "total_amount", "months", "due_day", "start_date", "category_code"],
+        },
+    },
+    {
+        "name": "list_commitments",
+        "description": "List the user's commitments. Omit status for active commitments. Use before resolving a payment.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "status": {"type": "string", "enum": ["active", "done", "canceled"]},
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "mark_paid",
+        "description": "Request confirmation of one payment for a commitment returned by list_commitments. Never invent an ID.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "commitment_id": {"type": "integer"},
+            },
+            "required": ["commitment_id"],
+        },
+    },
 ]
 
 CATEGORY_LABEL = {}
+
+COMMITMENT_TOOLS = ("create_bill", "create_installment", "list_commitments", "mark_paid")
+CREATION_TOOLS = ("create_bill", "create_installment")
+EXPENSE_CODES = ("food", "transport", "daily", "social", "utility", "other")
+COMMITMENT_STATUSES = ("active", "done", "canceled")
+MONTHS_MIN = 1
+MONTHS_MAX = 24
+MAX_ID = 4294967295
+ISO_DAY = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}\Z")
+DECL_BY_NAME = {decl["name"]: decl for decl in TOOL_DECLS}
 
 
 class ToolError(Exception):
@@ -161,7 +231,134 @@ def clean_text(value, limit):
     return text[:limit] if text else None
 
 
+def is_int(value):
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def add_months(value, months):
+    year, index = divmod(value.year * 12 + value.month - 1 + int(months), 12)
+    month = index + 1
+    return date(year, month, min(value.day, monthrange(year, month)[1]))
+
+
+def commitment_title(value):
+    if not isinstance(value, str):
+        raise ToolError("title must be a string of 1 to 120 characters")
+    text = value.strip()
+    if not 1 <= len(text) <= 120:
+        raise ToolError("title must be a string of 1 to 120 characters")
+    return text
+
+
+def commitment_amount(value, field):
+    if not is_int(value):
+        raise ToolError(field + " must be an integer")
+    if value < 1:
+        raise ToolError(field + " must be positive")
+    if value > MAX_AMOUNT:
+        raise ToolError(field + " is implausibly large")
+    return value
+
+
+def commitment_due_day(value):
+    if not is_int(value) or not 1 <= value <= 31:
+        raise ToolError("due_day must be an integer from 1 to 31")
+    return value
+
+
+def commitment_months(value):
+    if not is_int(value) or not MONTHS_MIN <= value <= MONTHS_MAX:
+        raise ToolError("months must be an integer from 1 to 24")
+    return value
+
+
+def commitment_start(value):
+    if not isinstance(value, str) or not ISO_DAY.fullmatch(value):
+        raise ToolError("start_date must be YYYY-MM-DD")
+    try:
+        parsed = datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        raise ToolError("start_date must be YYYY-MM-DD")
+    if parsed.year < 2000:
+        raise ToolError("start_date is implausible")
+    if parsed > add_months(today_jst(), 12):
+        raise ToolError("start_date must be within 12 months of today")
+    return parsed
+
+
+def commitment_category(code):
+    if code not in EXPENSE_CODES:
+        raise ToolError("category_code must be a seeded expense category")
+    rows = db.fetch_all(
+        "SELECT category_id, category_name FROM categories WHERE kind = 'expense' AND code = %s",
+        (code,),
+    )
+    if not rows:
+        raise ToolError("category_code must be a seeded expense category")
+    return {"category_id": rows[0]["category_id"], "category_name": rows[0]["category_name"], "code": code}
+
+
+def check_arguments(name, args):
+    if not isinstance(args, dict):
+        raise ToolError("arguments must be an object")
+    decl = DECL_BY_NAME[name]
+    properties = decl["parameters"]["properties"]
+    extra = sorted(key for key in args if key not in properties)
+    if extra:
+        raise ToolError("unexpected argument: " + str(extra[0]))
+    for key in decl["parameters"]["required"]:
+        if key not in args:
+            raise ToolError("missing argument: " + key)
+
+
+def validate_commitment_tool(name, args):
+    check_arguments(name, args)
+    if name == "create_bill":
+        return {
+            "kind": "bill",
+            "title": commitment_title(args["title"]),
+            "amount": commitment_amount(args["amount"], "amount"),
+            "total_amount": None,
+            "months": None,
+            "due_day": commitment_due_day(args["due_day"]),
+            "start_date": commitment_start(args["start_date"]),
+            "category": commitment_category(args["category_code"]),
+        }
+    if name == "create_installment":
+        title = commitment_title(args["title"])
+        total = commitment_amount(args["total_amount"], "total_amount")
+        months = commitment_months(args["months"])
+        due_day = commitment_due_day(args["due_day"])
+        start = commitment_start(args["start_date"])
+        category = commitment_category(args["category_code"])
+        if total < months:
+            raise ToolError("total_amount must be at least months")
+        return {
+            "kind": "installment",
+            "title": title,
+            "amount": total // months,
+            "total_amount": total,
+            "months": months,
+            "due_day": due_day,
+            "start_date": start,
+            "category": category,
+        }
+    if name == "list_commitments":
+        status = args.get("status", "active")
+        if status not in COMMITMENT_STATUSES:
+            raise ToolError("status must be active, done, or canceled")
+        return {"status": status}
+    if name == "mark_paid":
+        value = args["commitment_id"]
+        if not is_int(value) or not 1 <= value <= MAX_ID:
+            raise ToolError("commitment_id must be an integer from 1 to 4294967295")
+        return {"commitment_id": value}
+    raise ToolError("unknown tool " + str(name))
+
+
 def validate(name, args):
+    if name in COMMITMENT_TOOLS:
+        return validate_commitment_tool(name, args)
     if name in ("record_expense", "record_income"):
         kind = "expense" if name == "record_expense" else "income"
         normalized = {

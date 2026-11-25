@@ -91,10 +91,11 @@ def queue(request: Request):
     error_message = ERROR_MESSAGES.get(error_code)
     if error_code and error_message is None:
         error_message = ERROR_MESSAGES["invalid"]
-    return _render_queue(request, user, error_message=error_message)
+    force_ask = request.query_params.get("manual") == "1"
+    return _render_queue(request, user, error_message=error_message, force_ask=force_ask)
 
 
-def _render_queue(request, user, error_message=None, override=None, status_code=200):
+def _render_queue(request, user, error_message=None, override=None, status_code=200, force_ask=False):
     categories = _categories()
     cat_map = {c["code"]: c["category_name"] for c in categories}
     rows = _pending(user["user_id"])
@@ -112,6 +113,21 @@ def _render_queue(request, user, error_message=None, override=None, status_code=
         typed_amount = (override or {}).get("amount")
         card["display_amount"] = int(typed_amount) if str(typed_amount or "").isdigit() else card["data"].get("amount")
         card["edited"] = bool(typed_amount)
+        payment = card["data"].get("is_payment")
+        if payment is None:
+            payment = card["data"].get("is_receipt", True)
+        card["eventype"] = card["data"].get("evidence_type") or "other"
+        card["want_amount"] = not card["display_amount"]
+        card["want_date"] = not (card["data"].get("date") or (override or {}).get("date"))
+        card["want_category"] = code == "other"
+        if force_ask:
+            card["mode"] = "ask"
+        elif not payment and not card["display_amount"]:
+            card["mode"] = "unreadable"
+        elif card["want_amount"] or card["want_date"]:
+            card["mode"] = "ask"
+        else:
+            card["mode"] = "ready"
     return _templates(request).TemplateResponse(
         request,
         "receipts.html",
