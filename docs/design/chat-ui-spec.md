@@ -134,8 +134,11 @@ Current build floats the camera as a circle above the bar, which reads as an add
 
 ---
 
-## 8. Pending
+## 8. Pending, and what research actually produced
 
-- Part 2: desktop column layout, theme systems and breakpoints read from Mattermost / Rocket.Chat / Signal Desktop / Zulip.
-- Part 3: LINE / WhatsApp / iMessage / Slack / Discord / Teams / ChatGPT / Claude — consensus parameters.
-- Part 4: mobile keyboard, dynamic viewport, scroll anchoring and 44px touch rules, verified against 2026 browser behaviour.
+- **Part 3 — not delivered.** The LINE / WhatsApp / iMessage / Slack / Discord / Teams / ChatGPT / Claude comparative lane timed out after 30 minutes and produced nothing usable. Not retried on purpose: part 1 stands on first-party source plus Apple HIG, WCAG 2.2 and Japan DADS, which is stronger than a digest of screenshots. Only the messenger *consensus* numbers in §4 (78% width, 2-4 / 8-12px gaps) are second-hand, and they are labelled as such.
+- **Part 2 — outstanding.** Desktop column layout from Mattermost / Rocket.Chat / Signal Desktop / Zulip was blocked by the Antigravity Claude/GPT quota window (0% for ~4h). It only matters if this app ever grows a sidebar, which the plan does not call for.
+- **Part 4 — returned.** The smoothness sheet is grounded in this repo's real selectors and marks three claims it could not verify on 2026 browsers. Two findings are directly actionable:
+  1. `app/chat/templates/chat.html` pins the composer with `bottom:0` and has **no keyboard inset**, so on iOS the composer can sit under the keyboard. The 2026 fix is the viewport token `interactive-widget=resizes-content` (Chrome/Android confirmed on MDN; iOS unverified — needs a `visualViewport` JS fallback).
+  2. The unverified claims each carry a fallback: iOS Safari `interactive-widget`, `navigator.vibrate`, `overflow-anchor`.
+- **Provenance note.** In `Ajaxy/telegram-tt` the runtime source of truth is `theme.ts` / `DESIGN.md`, not `themes.json` — four legacy tokens differ between them, and server-provided chat themes can override `--message-*` and `--color-primary` at runtime.

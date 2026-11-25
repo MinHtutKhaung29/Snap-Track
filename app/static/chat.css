@@ -3,11 +3,11 @@
 .day::after{content:"";flex:1;height:1px;background:var(--line)}
 .msg{max-width:78%;padding:8px 12px;border-radius:15px;font-size:var(--t3);line-height:1.6}
 .msg p{margin:0}
-.msg.me{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:6px}
+.msg.me{align-self:flex-end;background:var(--accent);color:var(--accent-on);border-bottom-right-radius:6px}
 .msg.bot{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:6px}
 .msg.bot + .msg.me,.msg.me + .msg.bot,.pair + .msg,.msg + .pair{margin-top:4px}
 .ts{display:block;margin-top:4px;font-size:var(--t5);line-height:1.4;text-align:right;color:var(--muted)}
-.msg.me .ts{color:#fff}
+.msg.me .ts{color:var(--accent-on)}
 .pair{display:flex;flex-direction:column;align-self:flex-start;max-width:78%}
 .pair .msg{max-width:100%}
 .under{margin:2px 0 0;display:flex;align-items:center;gap:8px;padding-left:2px;font-size:var(--t4);color:var(--muted)}
@@ -15,7 +15,7 @@
 .intro{max-width:100%}
 .hello{margin:0 0 4px;font-size:var(--t2);font-weight:600;line-height:1.4}
 .intro .ex{margin:12px 0 0;display:flex;flex-wrap:wrap;gap:8px}
-.chip{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--field);color:var(--accent-fg);font-family:inherit;font-size:var(--t4);cursor:pointer}
+.chip{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line-strong);background:var(--field);color:var(--accent-fg);font-family:inherit;font-size:var(--t4);cursor:pointer}
 .thinking{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 16px}
 .thinking i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
 .thinking i:nth-child(2){animation-delay:.2s}
@@ -30,13 +30,13 @@
 .sub{font-size:var(--t5);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
 .strike{text-decoration:line-through;opacity:.55}
 .undone{opacity:.7}
-.pending{border-color:#2f4670}
+.pending{border-color:var(--line-strong)}
 .warn{margin:8px 0 0;font-size:var(--t4);line-height:1.5;color:var(--warn)}
 .acts{display:flex;gap:8px;margin-top:12px}
 .acts form{margin:0;flex:1}
 .acts button{width:100%;min-height:44px;border:0;border-radius:12px;font-family:inherit;font-size:var(--t3);font-weight:600;cursor:pointer}
 .acts .primary{min-height:44px;font-size:var(--t3)}
-.acts .ghost{border:1px solid var(--line);font-weight:500}
+.acts .ghost{border:1px solid var(--line-strong);font-weight:500}
 .more{display:inline-flex;align-items:center;min-height:44px;font-size:var(--t4);color:var(--accent-fg);text-decoration:none}
 .edit{margin-top:4px}
 .edit > summary{display:flex;align-items:center;min-height:44px;list-style:none;cursor:pointer;font-size:var(--t4);color:var(--accent-fg)}
@@ -47,11 +47,11 @@
 .lines .num{font-variant-numeric:tabular-nums;font-weight:600}
 .lines em{font-style:normal;font-size:var(--t5);color:var(--muted);min-width:34px;text-align:right}
 .cam{position:fixed;left:0;bottom:calc(76px + env(safe-area-inset-bottom));padding-left:16px}
-.cam-label{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:var(--surface);border:1px solid var(--line);font-size:20px;line-height:1;cursor:pointer}
+.cam-label{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:var(--surface);border:1px solid var(--line-strong);font-size:20px;line-height:1;cursor:pointer}
 .cam-label input{display:none}
 .composer{position:fixed;left:0;right:0;bottom:0;padding:8px 16px calc(8px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line)}
 .composer-inner{max-width:640px;margin:0 auto;display:flex;gap:8px}
-.composer input{flex:1;min-width:0;min-height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--field);color:var(--fg);font-family:inherit;font-size:16px}
+.composer input{flex:1;min-width:0;min-height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--line-strong);background:var(--field);color:var(--fg);font-family:inherit;font-size:16px}
 .composer input:focus{outline:2px solid var(--accent);outline-offset:1px}
-.composer button{min-width:64px;min-height:48px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-family:inherit;font-size:var(--t3);font-weight:600;cursor:pointer}
+.composer button{min-width:64px;min-height:48px;border:0;border-radius:12px;background:var(--accent);color:var(--accent-on);font-family:inherit;font-size:var(--t3);font-weight:600;cursor:pointer}
 .composer button:disabled{opacity:.55}
