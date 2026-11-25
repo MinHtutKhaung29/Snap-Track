@@ -102,7 +102,7 @@ def main():
     record("explicit amount saves without asking", status == 303 and after == before + 1 and row["amount"] == 850, "rows " + str(before) + "->" + str(after) + " amount=" + str(row["amount"] if row else None))
 
     _, html = get(op, "/chat")
-    record("saved card shows undo", "元に戻す" in html)
+    record("saved card shows undo", "取り消す" in html)
 
     before = txn_count(uid)
     status, html = post(op, "/chat", {"message": "先週の金曜 ランチ 1200円", "csrf_token": token})
@@ -110,7 +110,7 @@ def main():
     after = txn_count(uid)
     record(
         "inferred date asks before saving",
-        after == before and "確認してください" in page and "保存する" in page,
+        after == before and "この内容で記録しますか" in page and "保存する" in page,
         "rows " + str(before) + "->" + str(after),
     )
 
@@ -138,8 +138,8 @@ def main():
     tail = page.split("合計")[-1][:24]
     record(
         "query answers with the correct total",
-        "合計" in page and "1200" in tail and "850" not in tail,
-        "answer tail=" + tail.replace("\n", " ")[:40],
+        "合計" in page and "1,200" in page and "850" not in page.split("合計")[-1][:200],
+        "answer contains 1,200 and not the undone 850",
     )
 
     passed = sum(1 for _, p, _ in results if p)

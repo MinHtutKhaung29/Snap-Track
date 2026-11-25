@@ -6,6 +6,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
+from app.shared import db
 from app.shared.config import settings
 
 ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
@@ -17,6 +18,32 @@ class AIError(Exception):
         super().__init__(code)
         self.code = code
         self.detail = detail
+
+
+class _QuotaExceeded(Exception):
+    pass
+
+
+def reserve_quota(user_id):
+    today = datetime.now(JST).date()
+    try:
+        with db.cursor(commit=True) as cur:
+            cur.execute(
+                "INSERT INTO ai_usage (user_id, usage_date, call_count) VALUES (%s, %s, 1) "
+                "ON DUPLICATE KEY UPDATE call_count = call_count + 1",
+                (user_id, today),
+            )
+            cur.execute(
+                "SELECT call_count FROM ai_usage WHERE user_id = %s AND usage_date = %s",
+                (user_id, today),
+            )
+            row = cur.fetchone()
+            count = int(row["call_count"]) if row else 0
+            if count > settings.ai_daily_cap:
+                raise _QuotaExceeded()
+    except _QuotaExceeded:
+        return False
+    return True
 
 
 def generate_raw(system, contents, schema, timeout=120):

@@ -14,6 +14,9 @@
   {% if error_message %}
   <p class="err" role="alert">{{ error_message }}</p>
   {% endif %}
+  {% if request.query_params.get('discarded') %}
+  <p class="note">1件を捨てました。元に戻す場合はもう一度撮影してください。</p>
+  {% endif %}
   {% if not card %}
   <div class="empty">
     <p>未確認のレシートはありません。</p>
@@ -24,21 +27,24 @@
   <div class="queue-head"><span>読み取り結果</span><span class="count">{{ index }} / {{ total }}</span></div>
   <div class="swipe" id="card">
     <img class="shot" src="/receipts/{{ card.receipt_id }}/image" alt="レシート">
-    {% if card.read_status == 'failed' or not card.data.amount %}
+    {% if card.data.error == 'quota' %}
+    <p class="warn">本日の読み取り回数の上限に達しました。「直す」から入力してください。</p>
+    {% elif card.read_status == 'failed' or not card.data.amount %}
     <p class="warn">うまく読み取れませんでした。「直す」から入力してください。</p>
     {% endif %}
     <div class="label">合計{% if card.edited %}・修正中{% endif %}</div>
     <div class="amt">{% if card.display_amount %}¥{{ "{:,}".format(card.display_amount) }}{% else %}—{% endif %}</div>
     <div class="meta">
       <span class="pill">{{ override.shop or card.data.shop or "不明" }}</span>
-      <span class="sub">{{ card.date_label or "日付なし" }}</span>
+      <span class="sub">{{ override.date or card.date_label or "日付なし" }}</span>
     </div>
     <div class="meta"><span class="pill">{{ card.display_category or card.category_name }}</span></div>
   </div>
+  {% if not error_message %}
   <div class="actions">
     <form method="post" action="/receipts/{{ card.receipt_id }}/discard" class="discard-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button type="submit" class="danger" aria-label="捨てる">✕</button>
+      <button type="submit" class="danger" aria-label="このレシートを捨てる">✕<span>捨てる</span></button>
     </form>
     <button type="button" class="ghost act" id="fix-btn">← 直す</button>
     <form method="post" action="/receipts/{{ card.receipt_id }}/save" id="save-form" class="save-form">
@@ -47,18 +53,23 @@
     </form>
   </div>
   <p class="swipe-hint">右へスワイプで保存 ・ 左へスワイプで直す</p>
+  {% endif %}
   <details class="edit queue-edit" id="fix"{% if error_message %} open{% endif %}>
     <summary></summary>
     <form method="post" action="/receipts/{{ card.receipt_id }}/save" class="form tight">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <label>金額<input type="number" name="amount" value="{{ override.amount or card.data.amount or "" }}" min="1" inputmode="numeric" required></label>
-      <label>日付<input type="date" name="date" value="{{ override.date or card.data.date or today }}"></label>
+      <label>{% if card.data.date %}日付{% else %}日付（要確認）{% endif %}<input type="date" name="date" value="{{ override.date or card.data.date or today }}"></label>
       <label>店・内容<input type="text" name="shop" value="{{ override.shop or card.data.shop or "" }}" maxlength="120"></label>
       <label>分類<select name="category_code">
         {% set chosen = override.category_code or card.data.category_code %}
         {% for c in categories %}<option value="{{ c.code }}" {% if c.code == chosen %}selected{% endif %}>{{ c.category_name }}</option>{% endfor %}
       </select></label>
       <button type="submit" class="primary">この内容で保存</button>
+    </form>
+    <form method="post" action="/receipts/{{ card.receipt_id }}/discard" class="discard-inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="ghost">このレシートを捨てる</button>
     </form>
   </details>
   {% endif %}

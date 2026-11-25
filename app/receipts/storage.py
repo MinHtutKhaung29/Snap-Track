@@ -8,12 +8,26 @@ from PIL import Image
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 UPLOAD_ROOT = os.path.join(ROOT, "uploads")
 MAX_BYTES = 5 * 1024 * 1024
+CHUNK_SIZE = 64 * 1024
 MAX_SIDE = 1600
 JST = timezone(timedelta(hours=9))
 
 
 class UploadError(Exception):
     pass
+
+
+def read_bounded(stream, max_bytes=MAX_BYTES):
+    chunks = []
+    total = 0
+    limit = max_bytes + 1
+    while total < limit:
+        chunk = stream.read(min(CHUNK_SIZE, limit - total))
+        if not chunk:
+            break
+        chunks.append(chunk)
+        total += len(chunk)
+    return b"".join(chunks)
 
 
 def save_receipt_image(data):

@@ -67,8 +67,8 @@ def main():
     )
     record("register redirects", status == 303, "status=" + str(status) + " loc=" + str(loc))
 
-    status, html = get(opener, "/")
-    record("home serves logged-in user", status == 200 and "Smoke Test" in html, "status=" + str(status))
+    status, html = get(opener, "/chat")
+    record("chat serves logged-in user", status == 200 and "Smoke Test" in html, "status=" + str(status))
 
     status, html, loc = post(opener, "/logout", {"csrf_token": csrf_of(html) or ""})
     record("logout redirects", status == 303, "status=" + str(status) + " loc=" + str(loc))

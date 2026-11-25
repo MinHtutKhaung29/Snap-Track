@@ -6,6 +6,7 @@ from app.shared.config import settings
 from app.chat import tools as toolbox
 
 HISTORY_LIMIT = 20
+UNDO_EXPIRED_BODY = "24時間を過ぎた記録は取り消せません。"
 
 SYSTEM = (
     "あなたは個人のお金管理アプリ「Snap & Track」の中のアシスタントです。"
@@ -135,6 +136,105 @@ def handle_turn(user_id, text):
     body = "記録しました: " + describe(saved)
     store(user_id, "assistant", body, {"type": "saved", "txn": saved})
     return {"ok": True, "type": "saved", "txn": saved}
+
+
+def confirm(user_id, message_id, overrides):
+    with db.cursor(commit=True) as cur:
+        cur.execute(
+            "SELECT message_id, payload FROM chat_message WHERE message_id = %s AND user_id = %s FOR UPDATE",
+            (message_id, user_id),
+        )
+        row = cur.fetchone()
+        if not row or not row["payload"]:
+            return None
+        payload = json.loads(row["payload"]) if isinstance(row["payload"], str) else row["payload"]
+        if payload.get("type") != "proposal" or payload.get("status") != "pending":
+            return None
+        raw_args = dict(payload.get("raw_args") or {})
+        for key, value in (overrides or {}).items():
+            if value and str(value).strip():
+                raw_args[key] = str(value).strip()
+        try:
+            normalized = toolbox.validate(payload["tool"], raw_args)
+        except toolbox.ToolError:
+            cur.execute(
+                "UPDATE chat_message SET payload = %s WHERE message_id = %s AND user_id = %s",
+                (json.dumps({"type": "error", "code": "invalid"}, ensure_ascii=False), message_id, user_id),
+            )
+            return None
+        saved = save_in_cursor(cur, normalized, user_id)
+        body = "記録しました: " + describe(saved)
+        cur.execute(
+            "UPDATE chat_message SET body = %s, payload = %s WHERE message_id = %s AND user_id = %s",
+            (body, json.dumps({"type": "saved", "txn": saved}, ensure_ascii=False), message_id, user_id),
+        )
+    return saved
+
+
+def save_in_cursor(cur, args, user_id):
+    cur.execute(
+        "INSERT INTO transactions (user_id, kind, amount, txn_date, category_id, source, memo, source_kind) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, 'chat')",
+        (
+            user_id,
+            args["kind"],
+            args["amount"],
+            args["txn_date"],
+            args["category"]["category_id"],
+            args["source"],
+            args["memo"],
+        ),
+    )
+    return {
+        "txn_id": cur.lastrowid,
+        "kind": args["kind"],
+        "amount": args["amount"],
+        "date": args["txn_date"].isoformat(),
+        "date_label": toolbox.jp_date(args["txn_date"]),
+        "source": args["source"],
+        "category": args["category"]["category_name"],
+    }
+
+
+def undo_transaction(user_id, txn_id):
+    with db.cursor(commit=True) as cur:
+        cur.execute(
+            "UPDATE transactions SET deleted_at = NOW() WHERE txn_id = %s AND user_id = %s "
+            "AND deleted_at IS NULL AND created_at >= NOW() - INTERVAL 24 HOUR",
+            (txn_id, user_id),
+        )
+        if cur.rowcount == 1:
+            mark_undone_in_cursor(cur, user_id, txn_id)
+            return "undone"
+        cur.execute(
+            "SELECT deleted_at FROM transactions WHERE txn_id = %s AND user_id = %s",
+            (txn_id, user_id),
+        )
+        row = cur.fetchone()
+        if row is None or row["deleted_at"] is not None:
+            return "ignored"
+        cur.execute(
+            "INSERT INTO chat_message (user_id, role, body, payload) VALUES (%s, 'assistant', %s, %s)",
+            (user_id, UNDO_EXPIRED_BODY, json.dumps({"type": "text"}, ensure_ascii=False)),
+        )
+        return "expired"
+
+
+def mark_undone_in_cursor(cur, user_id, txn_id):
+    cur.execute(
+        "SELECT message_id, payload FROM chat_message WHERE user_id = %s "
+        "AND JSON_EXTRACT(payload, '$.txn.txn_id') = %s ORDER BY message_id DESC LIMIT 1",
+        (user_id, txn_id),
+    )
+    row = cur.fetchone()
+    if not row:
+        return
+    payload = json.loads(row["payload"]) if isinstance(row["payload"], str) else row["payload"]
+    payload["type"] = "undone"
+    cur.execute(
+        "UPDATE chat_message SET body = %s, payload = %s WHERE message_id = %s AND user_id = %s",
+        ("取り消しました。", json.dumps(payload, ensure_ascii=False), row["message_id"], user_id),
+    )
 
 
 def tool_defs():

@@ -4,7 +4,6 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import RedirectResponse
 
 from app.chat import service
-from app.chat import tools as toolbox
 from app.shared import auth, csrf, db
 
 router = APIRouter()
@@ -57,35 +56,10 @@ def chat_confirm(
     user = auth.current_user(request)
     if user is None:
         return RedirectResponse("/login", status_code=303)
-    row = db.fetch_one(
-        "SELECT message_id, payload FROM chat_message WHERE message_id = %s AND user_id = %s",
-        (message_id, _uid(user)),
-    )
-    if not row or not row["payload"]:
-        return RedirectResponse("/chat", status_code=303)
-    payload = json.loads(row["payload"]) if isinstance(row["payload"], str) else row["payload"]
-    if payload.get("type") != "proposal" or payload.get("status") != "pending":
-        return RedirectResponse("/chat", status_code=303)
-    raw_args = dict(payload.get("raw_args") or {})
-    if amount.strip():
-        raw_args["amount"] = amount.strip()
-    if date.strip():
-        raw_args["date"] = date.strip()
-    if category_code.strip():
-        raw_args["category_code"] = category_code.strip()
-    try:
-        normalized = toolbox.validate(payload["tool"], raw_args)
-        saved = toolbox.execute(payload["tool"], normalized, _uid(user))
-    except toolbox.ToolError:
-        db.execute(
-            "UPDATE chat_message SET payload = %s WHERE message_id = %s AND user_id = %s",
-            (json.dumps({"type": "error", "code": "invalid"}, ensure_ascii=False), message_id, _uid(user)),
-        )
-        return RedirectResponse("/chat", status_code=303)
-    body = "記録しました: " + service.describe(saved)
-    db.execute(
-        "UPDATE chat_message SET body = %s, payload = %s WHERE message_id = %s AND user_id = %s",
-        (body, json.dumps({"type": "saved", "txn": saved}, ensure_ascii=False), message_id, _uid(user)),
+    service.confirm(
+        _uid(user),
+        message_id,
+        {"amount": amount, "date": date, "category_code": category_code},
     )
     return RedirectResponse("/chat", status_code=303)
 
@@ -116,20 +90,5 @@ def undo(request: Request, txn_id: int, csrf_token: str = Form("")):
     user = auth.current_user(request)
     if user is None:
         return RedirectResponse("/login", status_code=303)
-    db.execute(
-        "UPDATE transactions SET deleted_at = NOW() WHERE txn_id = %s AND user_id = %s AND deleted_at IS NULL",
-        (txn_id, _uid(user)),
-    )
-    row = db.fetch_one(
-        "SELECT message_id, payload FROM chat_message WHERE user_id = %s "
-        "AND JSON_EXTRACT(payload, '$.txn.txn_id') = %s ORDER BY message_id DESC LIMIT 1",
-        (_uid(user), txn_id),
-    )
-    if row:
-        payload = json.loads(row["payload"]) if isinstance(row["payload"], str) else row["payload"]
-        payload["type"] = "undone"
-        db.execute(
-            "UPDATE chat_message SET body = %s, payload = %s WHERE message_id = %s AND user_id = %s",
-            ("取り消しました。", json.dumps(payload, ensure_ascii=False), row["message_id"], _uid(user)),
-        )
+    service.undo_transaction(_uid(user), txn_id)
     return RedirectResponse("/chat", status_code=303)
