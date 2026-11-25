@@ -17,7 +17,7 @@
     <li class="item{% if r.is_due %} due{% endif %}{% if r.overdue %} overdue{% endif %}">
       <div class="item-head">
         <span class="item-title">{{ r.title }}</span>
-        <span class="item-kind">{{ "分割払い" if r.kind == "installment" else "毎月" }}</span>
+        <span class="item-kind">{{ "分割払い" if r.kind == "installment" else "毎月の支払い" }}</span>
       </div>
       <div class="item-amount">¥{{ "{:,}".format(r.next_amount) }}</div>
       <div class="sheet">
