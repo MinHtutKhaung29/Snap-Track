@@ -74,6 +74,34 @@ def digits_in(text):
     return set(re.findall(r"\d+", cleaned))
 
 
+DATE_TOKENS = [
+    r"\d{4}[-/]\d{1,2}[-/]\d{1,2}",
+    r"\d{1,2}月\d{1,2}日",
+    r"(?<!\d)\d{1,2}/\d{1,2}(?!\d)",
+]
+
+NON_MONEY_TAIL = re.compile(r"(?:%|％|個|本|枚|時|分|回|件|人|歳|年|か月|日|割|g|kg|ml|L)")
+
+MONEY_TOKEN = re.compile(r"(¥|￥)?\s*(\d+)\s*(円)?")
+
+
+def money_tokens(text):
+    cleaned = normalize(text).replace(",", "").replace("，", "")
+    for pattern in DATE_TOKENS:
+        cleaned = re.sub(pattern, " ", cleaned)
+    explicit = set()
+    loose = set()
+    for match in MONEY_TOKEN.finditer(cleaned):
+        value = int(match.group(2))
+        tail = cleaned[match.end() : match.end() + 2]
+        if NON_MONEY_TAIL.match(tail):
+            continue
+        loose.add(value)
+        if match.group(1) or match.group(3):
+            explicit.add(value)
+    return explicit, loose
+
+
 EXPLICIT_DATE = re.compile(
     r"(\d{4}-\d{1,2}-\d{1,2})|(\d{1,2}月\d{1,2}日)|(\b\d{1,2}/\d{1,2}\b)|(今日|きょう|昨日|きのう|おととい)"
 )
@@ -208,7 +236,13 @@ def execute(name, args, user_id):
 def needs_confirmation(name, args, user_text):
     if name == "query_money":
         return None
-    if str(args.get("amount")) not in digits_in(user_text):
+    try:
+        amount = int(args.get("amount"))
+    except (TypeError, ValueError):
+        return "amount_not_in_message"
+    explicit, loose = money_tokens(user_text)
+    allowed = explicit if explicit else loose
+    if amount not in allowed:
         return "amount_not_in_message"
     if not has_explicit_date(user_text):
         return "date_inferred"

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}レシート — Snap &amp; Track{% endblock %}
+{% block nav %}
+  <span class="who"><span class="uname">{{ user.name }}</span>
+    <a class="linkbtn" href="/chat">チャット</a>
+    <form method="post" action="/logout">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="linkbtn">ログアウト</button>
+    </form>
+  </span>
+{% endblock %}
+{% block content %}
+<section class="queue">
+  {% if error_message %}
+  <p class="err" role="alert">{{ error_message }}</p>
+  {% endif %}
+  {% if not card %}
+  <div class="empty">
+    <p>未確認のレシートはありません。</p>
+    <p class="hint">チャットの📷から追加できます。</p>
+    <a class="primary btn-link" href="/chat">チャットへ</a>
+  </div>
+  {% else %}
+  <div class="queue-head"><span>読み取り結果</span><span class="count">{{ index }} / {{ total }}</span></div>
+  <div class="swipe" id="card">
+    <img class="shot" src="/receipts/{{ card.receipt_id }}/image" alt="レシート">
+    {% if card.read_status == 'failed' or not card.data.amount %}
+    <p class="warn">うまく読み取れませんでした。「直す」から入力してください。</p>
+    {% endif %}
+    <div class="label">合計{% if card.edited %}・修正中{% endif %}</div>
+    <div class="amt">{% if card.display_amount %}¥{{ "{:,}".format(card.display_amount) }}{% else %}—{% endif %}</div>
+    <div class="meta">
+      <span class="pill">{{ override.shop or card.data.shop or "不明" }}</span>
+      <span class="sub">{{ card.date_label or "日付なし" }}</span>
+    </div>
+    <div class="meta"><span class="pill">{{ card.display_category or card.category_name }}</span></div>
+  </div>
+  <div class="actions">
+    <form method="post" action="/receipts/{{ card.receipt_id }}/discard" class="discard-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="danger" aria-label="捨てる">✕</button>
+    </form>
+    <button type="button" class="ghost act" id="fix-btn">← 直す</button>
+    <form method="post" action="/receipts/{{ card.receipt_id }}/save" id="save-form" class="save-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="primary act">保存 →</button>
+    </form>
+  </div>
+  <p class="swipe-hint">右へスワイプで保存 ・ 左へスワイプで直す</p>
+  <details class="edit queue-edit" id="fix"{% if error_message %} open{% endif %}>
+    <summary></summary>
+    <form method="post" action="/receipts/{{ card.receipt_id }}/save" class="form tight">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label>金額<input type="number" name="amount" value="{{ override.amount or card.data.amount or "" }}" min="1" inputmode="numeric" required></label>
+      <label>日付<input type="date" name="date" value="{{ override.date or card.data.date or today }}"></label>
+      <label>店・内容<input type="text" name="shop" value="{{ override.shop or card.data.shop or "" }}" maxlength="120"></label>
+      <label>分類<select name="category_code">
+        {% set chosen = override.category_code or card.data.category_code %}
+        {% for c in categories %}<option value="{{ c.code }}" {% if c.code == chosen %}selected{% endif %}>{{ c.category_name }}</option>{% endfor %}
+      </select></label>
+      <button type="submit" class="primary">この内容で保存</button>
+    </form>
+  </details>
+  {% endif %}
+</section>
+{% endblock %}
+{% block foot %}
+<script>
+var card=document.getElementById('card');
+if(card){var sx=0,dx=0,active=false;
+card.addEventListener('pointerdown',function(e){if(e.target.closest('button,a,details,summary,form,summary'))return;active=true;sx=e.clientX;dx=0;card.setPointerCapture(e.pointerId);card.classList.add('drag');});
+card.addEventListener('pointermove',function(e){if(!active)return;dx=e.clientX-sx;card.style.transform='translateX('+dx+'px) rotate('+(dx/45)+'deg)';card.classList.toggle('ok',dx>90);card.classList.toggle('no',dx<-90);});
+card.addEventListener('pointerup',function(){if(!active)return;active=false;card.classList.remove('drag');card.style.transform='';var go=dx;dx=0;card.classList.remove('ok','no');if(go>90){document.getElementById('save-form').requestSubmit();}else if(go<-90){var f=document.getElementById('fix');f.open=true;f.scrollIntoView({block:'center',behavior:'smooth'});}});
+card.addEventListener('pointercancel',function(){active=false;card.style.transform='';});
+var fb=document.getElementById('fix-btn');if(fb){fb.addEventListener('click',function(){var f=document.getElementById('fix');f.open=true;f.scrollIntoView({block:'center',behavior:'smooth'});});}}
+</script>
+{% endblock %}
