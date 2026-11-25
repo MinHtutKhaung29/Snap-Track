@@ -65,6 +65,10 @@ h1{margin:0 0 6px;font-size:22px}
 .lines .num{font-variant-numeric:tabular-nums;font-weight:600}
 .lines em{font-style:normal;color:var(--muted);font-size:12px;min-width:34px;text-align:right}
 .composer{position:fixed;left:0;right:0;bottom:0;background:rgba(15,23,42,.96);border-top:1px solid var(--line);backdrop-filter:blur(8px);padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+.cam{position:fixed;left:0;bottom:calc(76px + env(safe-area-inset-bottom));padding-left:12px}
+.cam-label{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;background:#1e293b;border:1px solid var(--line);font-size:20px;cursor:pointer}
+.cam-label input{display:none}
+.thread{padding-bottom:150px!important}
 .composer-inner{max-width:640px;margin:0 auto;display:flex;gap:8px}
 .composer input{flex:1;min-height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:#0d1526;color:var(--fg);font-size:16px}
 .composer input:focus{outline:2px solid #3b82f6;outline-offset:1px}
@@ -74,3 +78,24 @@ h1{margin:0 0 6px;font-size:22px}
 .who form{margin:0}
 .linkbtn{min-height:44px;padding:0 2px;display:inline-flex;align-items:center;background:none;border:0;color:#60a5fa;font:inherit;cursor:pointer}
 .field-hint{margin:-2px 0 0;font-size:12px;color:var(--muted)}
+.queue{max-width:520px;margin:0 auto;padding-bottom:40px}
+.queue-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:10px}
+.count{font-variant-numeric:tabular-nums}
+.swipe{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;touch-action:pan-y;user-select:none;transition:transform .18s ease,border-color .18s ease}
+.swipe.drag{transition:none}
+.swipe.ok{border-color:#15803d}
+.swipe.no{border-color:#b45309}
+.shot{width:100%;max-height:320px;object-fit:contain;background:#0d1526;border-radius:12px;margin-bottom:14px}
+.actions{display:flex;gap:10px;margin-top:14px;align-items:stretch}
+.actions form{margin:0}
+.actions .discard-form{flex:0 0 56px}
+.actions .save-form{flex:1}
+.actions .act{width:100%;min-height:52px;border:0;border-radius:12px;font-weight:700;font-size:15px;white-space:nowrap}
+.actions>.act{flex:1;width:auto}
+.actions .ghost{background:transparent;border:1px solid var(--line);color:var(--fg)}
+.danger{width:100%;min-width:56px;min-height:52px;border-radius:12px;border:1px solid var(--line);background:transparent;color:#f87171;font-size:18px}
+.queue-edit summary{display:none}
+.swipe-hint{margin:12px 0 0;font-size:12px;color:var(--muted);text-align:center}
+.empty{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 20px;text-align:center}
+.btn-link{display:inline-block;margin-top:14px;padding:12px 20px;border-radius:12px;text-decoration:none;font-weight:700}
+.queue .label{margin-top:4px}

@@ -87,6 +87,12 @@
     {% endif %}
   {% endfor %}
 </section>
+<form method="post" action="/receipts/upload" enctype="multipart/form-data" class="cam">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <label class="cam-label" title="レシートを撮る">📷
+    <input type="file" name="photo" accept="image/*" capture="environment" onchange="this.form.submit()">
+  </label>
+</form>
 <form method="post" action="/chat" class="composer">
   <div class="composer-inner">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

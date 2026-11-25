@@ -19,18 +19,33 @@ class AIError(Exception):
         self.detail = detail
 
 
-def generate(system, contents, tools=None, timeout=60):
+def generate_raw(system, contents, schema, timeout=120):
     if settings.ai_mode == "stub":
-        return stub(contents, tools)
+        return json.dumps(
+            {
+                "is_receipt": True,
+                "date": None,
+                "shop": "テスト店",
+                "amount": 648,
+                "category_code": "food",
+            },
+            ensure_ascii=False,
+        )
     if not settings.gemini_api_key:
         raise AIError("no_key", "GEMINI_API_KEY is empty")
     body = {
         "systemInstruction": {"parts": [{"text": system}]},
         "contents": contents,
-        "generationConfig": {"temperature": 0},
+        "generationConfig": {
+            "temperature": 0,
+            "responseMimeType": "application/json",
+            "responseSchema": schema,
+        },
     }
-    if tools:
-        body["tools"] = [{"functionDeclarations": tools}]
+    return _post(body, timeout)["text"]
+
+
+def _post(body, timeout):
     request = urllib.request.Request(
         ENDPOINT.format(model=settings.gemini_model) + "?key=" + urllib.parse.quote(settings.gemini_api_key, safe=""),
         data=json.dumps(body).encode("utf-8"),
@@ -44,11 +59,11 @@ def generate(system, contents, tools=None, timeout=60):
                 payload = json.loads(response.read().decode("utf-8"))
             break
         except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8", "replace")[:300]
+            detail = exc.read().decode("utf-8", "replace")[:300]
             if 500 <= exc.code < 600 and attempt < 3:
-                last = AIError("http_" + str(exc.code), body)
+                last = AIError("http_" + str(exc.code), detail)
                 continue
-            raise AIError("http_" + str(exc.code), body)
+            raise AIError("http_" + str(exc.code), detail)
         except Exception as exc:
             last = AIError(type(exc).__name__, str(exc)[:300])
             if attempt < 3:
@@ -57,11 +72,25 @@ def generate(system, contents, tools=None, timeout=60):
     else:
         raise last or AIError("retries_exhausted")
     candidates = payload.get("candidates") or [{}]
-    content = candidates[0].get("content") or {}
-    parts = content.get("parts") or []
+    parts = (candidates[0].get("content") or {}).get("parts") or []
     calls = [part["functionCall"] for part in parts if "functionCall" in part]
     text = "".join(part.get("text", "") for part in parts if "text" in part)
     return {"calls": calls, "text": text.strip()}
+
+
+def generate(system, contents, tools=None, timeout=60):
+    if settings.ai_mode == "stub":
+        return stub(contents, tools)
+    if not settings.gemini_api_key:
+        raise AIError("no_key", "GEMINI_API_KEY is empty")
+    body = {
+        "systemInstruction": {"parts": [{"text": system}]},
+        "contents": contents,
+        "generationConfig": {"temperature": 0},
+    }
+    if tools:
+        body["tools"] = [{"functionDeclarations": tools}]
+    return _post(body, timeout)
 
 
 def user_turn(text):
