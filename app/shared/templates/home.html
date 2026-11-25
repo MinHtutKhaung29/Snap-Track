@@ -1,13 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Snap &amp; Track — ホーム{% endblock %}
-{% block nav %}
-  <span class="who">{{ user.name }}
-    <form method="post" action="/logout">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button type="submit" class="linkbtn">ログアウト</button>
-    </form>
-  </span>
-{% endblock %}
+{% block heading %}ホーム{% endblock %}
 {% block content %}
 <section class="card">
   <h1>{{ user.name }} さん</h1>

@@ -8,16 +8,26 @@
   <link rel="stylesheet" href="/static/base.css">
   <link rel="stylesheet" href="/static/chat.css">
   <link rel="stylesheet" href="/static/receipts.css">
+  <link rel="stylesheet" href="/static/commitments.css">
   {% block head %}{% endblock %}
 </head>
 <body>
-  <header class="top">
-    <a class="brand" href="/">Snap &amp; Track</a>
-    <nav class="nav">
-      {% if user %}<a href="/commitments">支払い予定</a>{% endif %}
-      {% block nav %}{% endblock %}
-    </nav>
+  <header class="hdr">
+    <h1 class="hdr-title">{% block heading %}Snap &amp; Track{% endblock %}</h1>
+    {% if user %}
+    <form method="post" action="/logout" class="signout">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit">ログアウト</button>
+    </form>
+    {% endif %}
   </header>
+  {% if user %}
+  <nav class="tabs">
+    <a href="/chat"{% if request.url.path == "/chat" %} aria-current="page"{% endif %}>チャット</a>
+    <a href="/receipts"{% if request.url.path.startswith("/receipts") %} aria-current="page"{% endif %}>レシート</a>
+    <a href="/commitments"{% if request.url.path.startswith("/commitments") %} aria-current="page"{% endif %}>支払い予定</a>
+  </nav>
+  {% endif %}
   <main class="wrap">{% block content %}{% endblock %}</main>
   <footer class="foot">{% block foot %}{% endblock %}</footer>
 </body>

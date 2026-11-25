@@ -1,14 +1,6 @@
 {% extends "base.html" %}
 {% block title %}写真から記録 — Snap &amp; Track{% endblock %}
-{% block nav %}
-  <span class="who"><span class="uname">{{ user.name }}</span>
-    <a class="linkbtn" href="/chat">チャット</a>
-    <form method="post" action="/logout">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button type="submit" class="linkbtn">ログアウト</button>
-    </form>
-  </span>
-{% endblock %}
+{% block heading %}写真から記録{% endblock %}
 {% block content %}
 <section class="queue">
   {% if error_message %}
@@ -20,47 +12,78 @@
   {% if not card %}
   <div class="empty">
     <p class="empty-title">未確認の写真はありません</p>
-    <p class="hint">チャットの📷から追加できます。</p>
+    <p class="hint">チャットの写真ボタンから追加できます。</p>
     <a class="primary btn-link" href="/chat">チャットへ</a>
   </div>
   {% else %}
-  <div class="queue-head"><span>確認</span><span class="count">{{ index }} / {{ total }}</span></div>
-  <div class="shot-wrap"><img class="shot" src="/receipts/{{ card.receipt_id }}/image" alt=""></div>
-  {% if card.mode == 'unreadable' %}
-  <div class="ask">
-    <p class="ask-title">お支払いとして読み取れませんでした</p>
-    <p class="ask-sub">レシートの写真でも、支払い画面のスクリーンショットでもかまいません。金額が見える画像を選んでください。</p>
-    <div class="stack">
-      <a class="primary btn-link" href="/chat">もう一度とる</a>
-      <a class="ghost btn-link" href="/receipts?manual=1">手入力で登録</a>
-      <form method="post" action="/receipts/{{ card.receipt_id }}/discard" class="discard-inline">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-        <button type="submit" class="ghost">この画像を捨てる</button>
-      </form>
+  <div class="shot-row">
+    <details class="shot">
+      <summary><img class="thumb" src="/receipts/{{ card.receipt_id }}/image" alt="取り込んだ写真" width="96" height="96"></summary>
+      <div class="shot-full"><img src="/receipts/{{ card.receipt_id }}/image" alt="" loading="lazy"></div>
+    </details>
+    <div class="shot-info">
+      <span class="shot-count">{{ index }} / {{ total }}</span>
+      <span class="shot-label">{% if card.mode == "unreadable" %}読み取れません{% else %}確認待ち{% endif %}</span>
     </div>
   </div>
+  {% if card.mode == 'unreadable' %}
+  <div class="ask">
+    <div class="ask-note">
+      <p class="ask-title">お支払いとして読み取れませんでした</p>
+      <p class="ask-sub">レシートの写真でも、支払い画面のスクリーンショットでもかまいません。金額が見える画像を選んでください。</p>
+    </div>
+    <div class="actions">
+      <a class="primary btn-link" href="/chat">もう一度とる</a>
+      <a class="secondary btn-link" href="/receipts?manual=1">手入力で登録</a>
+    </div>
+  </div>
+  <details class="discard">
+    <summary>この画像を捨てる</summary>
+    <form method="post" action="/receipts/{{ card.receipt_id }}/discard" class="discard-panel">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <p class="hint">この画像は元に戻せません。</p>
+      <button type="submit" class="secondary btn-link">捨てる</button>
+    </form>
+  </details>
   {% else %}
+  {% set shop_value = override.shop or card.data.shop or "" %}
   <form method="post" action="/receipts/{{ card.receipt_id }}/save" class="ask" id="save-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     {% if card.mode == 'ask' %}
-    <p class="ask-title">{% if card.want_amount %}金额を教えてください{% else %}内容を確かめてください{% endif %}</p>
+    <p class="ask-title">{% if card.want_amount %}金額を教えてください{% elif card.want_date %}日付を教えてください{% else %}内容を確かめてください{% endif %}</p>
     {% endif %}
-    <label class="field{% if card.want_amount %} field-missing{% endif %}">
-      <span class="field-label">金額{% if card.want_amount %}<em>読み取れませんでした</em>{% endif %}</span>
-      <span class="field-input"><span class="yen">¥</span>
-        <input type="number" name="amount" value="{{ card.display_amount or "" }}" min="1" inputmode="numeric" placeholder="0" {% if card.want_amount %}required autofocus{% endif %}>
-      </span>
-    </label>
-    <label class="field{% if card.want_date %} field-missing{% endif %}">
-      <span class="field-label">日付{% if card.want_date %}<em>推測できません。今日を入れてあります</em>{% endif %}</span>
-      <input type="date" name="date" value="{{ override.date or card.data.date or today }}">
-    </label>
-    <label class="field">
-      <span class="field-label">店・内容</span>
-      <input type="text" name="shop" value="{{ override.shop or card.data.shop or "" }}" maxlength="120" placeholder="セブン-イレブン、家賃 など">
-    </label>
-    <div class="field">
-      <span class="field-label">分類{% if card.want_category %}<em>選んでください</em>{% endif %}</span>
+    <div class="sheet">
+      <details class="row row-hero{% if card.want_amount %} row-missing{% endif %}"{% if card.want_amount %} open{% endif %}>
+        <summary>
+          <span class="row-k">金額</span>
+          <span class="row-v amount">{% if card.want_amount %}<em class="need">教えてください</em>{% else %}¥{{ "{:,}".format(card.display_amount|int) }}{% endif %}</span>
+        </summary>
+        <div class="row-edit">
+          <span class="yen">¥</span>
+          <input type="number" name="amount" value="{{ card.display_amount or "" }}" min="1" inputmode="numeric"{% if card.want_amount %} required autofocus{% endif %}>
+        </div>
+      </details>
+      <details class="row{% if card.want_date %} row-missing{% endif %}"{% if card.want_date %} open{% endif %}>
+        <summary>
+          <span class="row-k">日付</span>
+          <span class="row-v">{% if card.want_date %}<em class="need">教えてください</em>{% else %}{{ ((override.date or card.data.date or "")|string).replace("-", "/") }}{% endif %}</span>
+        </summary>
+        <div class="row-edit">
+          <input type="date" name="date" value="{{ override.date or card.data.date or today }}">
+        </div>
+      </details>
+      <details class="row">
+        <summary>
+          <span class="row-k">店・内容</span>
+          <span class="row-v{% if not shop_value %} muted{% endif %}">{{ shop_value or "未入力" }}</span>
+        </summary>
+        <div class="row-edit">
+          <input type="text" name="shop" value="{{ shop_value }}" maxlength="120" placeholder="セブン-イレブン、家賃 など">
+        </div>
+      </details>
+    </div>
+    <div class="choose">
+      <span class="row-k">分類{% if card.want_category %}<em class="need"> 選んでください</em>{% endif %}</span>
       <div class="chips">
         {% for c in categories %}
         <input type="radio" name="category_code" id="cat{{ loop.index }}" value="{{ c.code }}" {% if c.code == card.data.category_code %}checked{% endif %}>
@@ -72,10 +95,14 @@
       <button type="submit" class="primary">保存する</button>
     </div>
   </form>
-  <form method="post" action="/receipts/{{ card.receipt_id }}/discard" class="discard-inline">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <button type="submit" class="ghost">この画像を捨てる</button>
-  </form>
+  <details class="discard">
+    <summary>この画像を捨てる</summary>
+    <form method="post" action="/receipts/{{ card.receipt_id }}/discard" class="discard-panel">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <p class="hint">この画像は元に戻せません。</p>
+      <button type="submit" class="secondary btn-link">捨てる</button>
+    </form>
+  </details>
   {% endif %}
   {% endif %}
 </section>

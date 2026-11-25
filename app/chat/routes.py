@@ -3,7 +3,7 @@ import json
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from app.chat import service
+from app.chat import service, tools
 from app.shared import auth, csrf, db
 
 router = APIRouter()
@@ -32,7 +32,13 @@ def chat_page(request: Request):
     return _templates(request).TemplateResponse(
         request,
         "chat.html",
-        {"user": user, "messages": messages, "categories": categories, "csrf_token": csrf.issue_token(request)},
+        {
+            "user": user,
+            "messages": messages,
+            "categories": categories,
+            "today": tools.today_jst(),
+            "csrf_token": csrf.issue_token(request),
+        },
     )
 
 
