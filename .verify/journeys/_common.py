@@ -86,9 +86,9 @@ def register(page, address, name="検証 太郎"):
 
 def send(page, text):
     before = page.locator("#thread .msg").count()
-    page.fill('input[name="message"]', text)
+    page.fill('[name="message"]', text)
     started = time.time()
-    page.press('input[name="message"]', "Enter")
+    page.press('[name="message"]', "Enter")
     page.wait_for_timeout(120)
     bubbles = page.locator("#thread .msg.me")
     to_bubble = round((time.time() - started) * 1000)

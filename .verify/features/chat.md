@@ -19,8 +19,8 @@ One permanent thread per user. Every money action is either saved immediately or
 ## Driving it with Playwright
 
 ```python
-page.fill('input[name="message"]', "今日 ランチ 850円")
-page.press('input[name="message"]', "Enter")
+page.fill('[name="message"]', "今日 ランチ 850円")
+page.press('[name="message"]', "Enter")
 page.wait_for_function("() => document.getElementById('chat-form').dataset.busy === '0' "
                        "&& !document.querySelector('#thread .thinking')", timeout=180000)
 ```

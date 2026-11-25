@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
   <title>{% block title %}Snap &amp; Track{% endblock %}</title>
@@ -31,5 +31,15 @@
   {% endif %}
   <main class="wrap">{% block content %}{% endblock %}</main>
   <footer class="foot">{% block foot %}{% endblock %}</footer>
+  <script>
+  (function(){
+    var vv=window.visualViewport,root=document.documentElement;
+    if(!vv){return;}
+    function sync(){root.style.setProperty('--kb-inset',Math.max(0,window.innerHeight-vv.height-vv.offsetTop)+'px');}
+    vv.addEventListener('resize',sync);
+    vv.addEventListener('scroll',sync);
+    sync();
+  })();
+  </script>
 </body>
 </html>
