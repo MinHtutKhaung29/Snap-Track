@@ -1,25 +1,28 @@
 .queue{max-width:520px;margin:0 auto;padding-bottom:40px}
-.queue-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:10px}
+.queue-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:8px;letter-spacing:.04em}
 .count{font-variant-numeric:tabular-nums}
-.swipe{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;touch-action:pan-y;user-select:none;transition:transform .18s ease,border-color .18s ease}
-.swipe.drag{transition:none}
-.swipe.ok{border-color:#15803d}
-.swipe.no{border-color:#b45309}
-.shot{width:100%;max-height:320px;object-fit:contain;background:#0d1526;border-radius:12px;margin-bottom:14px}
-.actions{display:flex;gap:10px;margin-top:14px;align-items:stretch}
-.actions form{margin:0}
-.actions .discard-form{flex:0 0 56px}
-.actions .save-form{flex:1}
-.actions .act{width:100%;min-height:52px;border:0;border-radius:12px;font-weight:700;font-size:15px;white-space:nowrap}
-.actions>.act{flex:1;width:auto}
-.actions .ghost{background:transparent;border:1px solid var(--line);color:var(--fg)}
-.danger{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;min-width:60px;min-height:52px;border-radius:12px;border:1px solid var(--line);background:transparent;color:#f87171;font-size:16px;line-height:1}
-.danger span{font-size:10px;color:var(--muted)}
-.note{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#132a1e;color:#86efac;font-size:13px}
-.discard-inline{margin:10px 0 0}
-.discard-inline button{width:100%;min-height:44px;border-radius:10px;font-size:13px}
-.queue-edit summary{display:none}
-.swipe-hint{margin:12px 0 0;font-size:12px;color:var(--muted);text-align:center}
-.empty{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 20px;text-align:center}
-.btn-link{display:inline-block;margin-top:14px;padding:12px 20px;border-radius:12px;text-decoration:none;font-weight:700}
-.queue .label{margin-top:4px}
+.shot-wrap{background:#0b1220;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:12px}
+.shot{display:block;width:100%;max-height:300px;object-fit:contain}
+.ask{display:grid;gap:14px}
+.ask-title{margin:0;font-size:15px;font-weight:600}
+.ask-sub{margin:-6px 0 0;font-size:13px;color:var(--muted);line-height:1.6}
+.field{display:grid;gap:6px}
+.field-label{font-size:12px;color:var(--muted);letter-spacing:.03em;display:flex;justify-content:space-between;gap:8px}
+.field-label em{font-style:normal;color:#fbbf24;font-size:11px}
+.field input{width:100%;min-height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:#0d1526;color:var(--fg);font-size:16px}
+.field-missing input{border-color:#7c5a12;background:#1a1508}
+.field-input{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:12px;background:#0d1526;padding-left:12px}
+.field-input input{border:0;background:transparent;padding-left:0}
+.field-missing .field-input{border-color:#7c5a12;background:#1a1508}
+.yen{font-size:18px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips input{position:absolute;opacity:0;pointer-events:none}
+.chips label{padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:#0d1526;font-size:13.5px;color:var(--fg);cursor:pointer}
+.chips input:checked+label{background:#1d4ed8;border-color:#1d4ed8;color:#fff;font-weight:600}
+.actions button{width:100%;min-height:52px;border:0;border-radius:13px;font-weight:700;font-size:16px}
+.discard-inline{margin-top:10px}
+.discard-inline button{width:100%;min-height:44px;border-radius:11px;font-size:13px}
+.stack{display:grid;gap:10px;margin-top:6px}
+.btn-link{display:flex;align-items:center;justify-content:center;min-height:50px;border-radius:13px;text-decoration:none;font-weight:700}
+.empty{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px 20px;text-align:center}
+.empty-title{margin:0 0 6px;font-weight:600}

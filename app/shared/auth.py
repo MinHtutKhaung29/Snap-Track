@@ -6,6 +6,7 @@ import mysql.connector
 from fastapi.responses import RedirectResponse
 
 from app.shared import db
+from app.shared.csrf import SESSION_TOKEN_KEY
 
 SCRYPT_N = 2**14
 SCRYPT_R = 8
@@ -78,12 +79,18 @@ def authenticate(email, password):
 
 
 def login_user(request, user):
+    token = request.session.get(SESSION_TOKEN_KEY)
     request.session.clear()
     request.session[SESSION_USER_KEY] = user["user_id"]
+    if token:
+        request.session[SESSION_TOKEN_KEY] = token
 
 
 def logout_user(request):
+    token = request.session.get(SESSION_TOKEN_KEY)
     request.session.clear()
+    if token:
+        request.session[SESSION_TOKEN_KEY] = token
 
 
 def current_user(request):

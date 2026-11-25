@@ -1,0 +1,161 @@
+import os
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+DUE_PAGE = "\n".join(
+    [
+        '{% extends "base.html" %}',
+        "{% block title %}支払い予定 — Snap &amp; Track{% endblock %}",
+        '{% block head %}<link rel="stylesheet" href="/static/commitments.css">{% endblock %}',
+        "{% block nav %}",
+        '  <span class="who"><span class="uname">{{ user.name }}</span>',
+        '    <a class="linkbtn" href="/chat">チャット</a>',
+        '    <a class="linkbtn" href="/receipts">レシート</a>',
+        '    <form method="post" action="/logout">',
+        '      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">',
+        '      <button type="submit" class="linkbtn">ログアウト</button>',
+        "    </form>",
+        "  </span>",
+        "{% endblock %}",
+        "{% block content %}",
+        '<section class="due">',
+        "  <h1>支払い予定</h1>",
+        '  {% if note %}<p class="note" role="status">{{ note }}</p>{% endif %}',
+        '  {% if error_message %}<p class="err" role="alert">{{ error_message }}</p>{% endif %}',
+        "  {% if not rows %}",
+        '  <div class="empty">',
+        "    <p>支払い予定はありません。</p>",
+        '    <p class="hint">チャットで「家賃 85000円 27日払い」のように話しかけると登録できます。</p>',
+        '    <a class="primary btn-link" href="/chat">チャットへ</a>',
+        "  </div>",
+        "  {% else %}",
+        '  <ul class="due-list">',
+        "    {% for r in rows %}",
+        '    <li class="due-row{% if r.overdue %} overdue{% endif %}">',
+        '      <div class="due-head">',
+        '        <span class="pill">{% if r.kind == "installment" %}分割払い{% else %}毎月の支払い{% endif %}</span>',
+        '        {% if r.overdue %}<span class="flag">期限超過</span>{% endif %}',
+        "      </div>",
+        '      <div class="due-title">{{ r.title }}</div>',
+        '      <div class="due-amt">¥{{ "{:,}".format(r.next_amount) }}</div>',
+        '      <div class="due-meta">',
+        '        <span class="sub">次回 {{ r.next_due_date_label }}</span>',
+        '        <span class="pill">{{ r.category_name }}</span>',
+        "      </div>",
+        '      <div class="due-meta">',
+        '        {% if r.kind == "installment" %}',
+        '        <span class="sub">支払済み {{ r.paid_count }}/{{ r.months }} 回</span>',
+        '        <span class="sub">残り {{ r.remaining }} 回</span>',
+        "        {% else %}",
+        '        <span class="sub">支払済み {{ r.paid_count }} 回</span>',
+        "        {% endif %}",
+        "      </div>",
+        '      <form method="post" action="/commitments/{{ r.id }}/pay" class="pay-form">',
+        '        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">',
+        '        <input type="hidden" name="expected_due_date" value="{{ r.next_due_date }}">',
+        '        <input type="hidden" name="expected_last_txn_id" value="{{ r.last_txn_id }}">',
+        '        <button type="submit" class="primary"{% if not r.is_due %} disabled{% endif %}>支払った</button>',
+        "      </form>",
+        '      {% if not r.is_due %}<p class="hint">支払期日が来ると押せます。</p>{% endif %}',
+        "    </li>",
+        "    {% endfor %}",
+        "  </ul>",
+        "  {% endif %}",
+        "</section>",
+        "{% endblock %}",
+        "",
+    ]
+)
+
+MSG_PART = "\n".join(
+    [
+        "{% set p = m.payload %}",
+        '{% if p and p.type == "commitment_payment" and p.status == "pending" %}',
+        '<div class="msg bot entry pending">',
+        '  <div class="label">この支払いを記録しますか？</div>',
+        '  <div class="amt">¥{{ "{:,}".format(p.preview.amount) }}</div>',
+        '  <div class="meta"><span class="pill">{{ p.preview.title }}</span><span class="sub">{{ p.preview.due_date_label }}</span></div>',
+        '  <div class="meta"><span class="pill">{{ p.preview.category }}</span><span class="sub">記録日 {{ p.preview.date_label }}</span></div>',
+        '  <div class="row">',
+        '    <form method="post" action="/chat/confirm/{{ m.message_id }}">',
+        '      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">',
+        '      <button type="submit" class="primary">支払った</button>',
+        "    </form>",
+        '    <form method="post" action="/chat/cancel/{{ m.message_id }}">',
+        '      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">',
+        '      <button type="submit" class="ghost">やめる</button>',
+        "    </form>",
+        "  </div>",
+        "</div>",
+        '{% elif p and p.type == "commitment_proposal" and p.status == "pending" %}',
+        '<div class="msg bot entry pending">',
+        '  <div class="label">この支払い予定を作りますか？</div>',
+        '  <div class="amt">¥{{ "{:,}".format(p.preview.amount) }}</div>',
+        '  <div class="meta"><span class="pill">{{ p.preview.title }}</span><span class="pill">{{ p.preview.category }}</span></div>',
+        '  <div class="meta"><span class="sub">{{ p.preview.schedule_label }}</span><span class="sub">初回 {{ p.preview.first_due_date_label }}</span></div>',
+        '  <p class="warn">作成しても支出にはなりません。支払ったときに記録されます。</p>',
+        '  <div class="row">',
+        '    <form method="post" action="/chat/confirm/{{ m.message_id }}">',
+        '      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">',
+        '      <button type="submit" class="primary">作成する</button>',
+        "    </form>",
+        '    <form method="post" action="/chat/cancel/{{ m.message_id }}">',
+        '      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">',
+        '      <button type="submit" class="ghost">やめる</button>',
+        "    </form>",
+        "  </div>",
+        "</div>",
+        '{% elif p and p.type == "commitment" and p.commitment %}',
+        '<div class="msg bot entry">',
+        '  <div class="label">支払い予定を作成しました</div>',
+        '  <div class="amt">¥{{ "{:,}".format(p.commitment.amount) }}</div>',
+        '  <div class="meta"><span class="pill">{{ p.commitment.title }}</span><span class="pill">{{ p.commitment.category_name or "" }}</span></div>',
+        '  <div class="meta"><span class="sub">{{ p.commitment.schedule_label }}</span><span class="sub">初回 {{ p.commitment.next_due_date_label }}</span></div>',
+        '  <a class="linkbtn" href="/commitments">支払い予定を見る</a>',
+        "</div>",
+        "{% else %}",
+        '<div class="msg bot"><p>{{ m.body }}</p></div>',
+        "{% endif %}",
+        "",
+    ]
+)
+
+CSS = "\n".join(
+    [
+        ".due{max-width:560px;margin:0 auto;padding-bottom:40px}",
+        ".due h1{margin:0 0 14px;font-size:22px}",
+        ".due .note{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#132a1e;color:#86efac;font-size:13px}",
+        ".due-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}",
+        ".due-row{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}",
+        ".due-row.overdue{border-color:#b45309}",
+        ".due-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}",
+        ".due-title{font-size:16px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}",
+        ".due-amt{margin-top:6px;font-size:28px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;line-height:1.15}",
+        ".due-meta{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px}",
+        ".due-meta .pill{background:#0d1526;border:1px solid var(--line);color:#cbd5e1;font-size:12px;padding:3px 10px;border-radius:999px}",
+        ".due-meta .sub{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}",
+        ".flag{background:#3b1d24;color:#fca5a5;font-size:12px;padding:3px 10px;border-radius:999px}",
+        ".pay-form{margin:14px 0 0}",
+        ".pay-form button{width:100%;min-height:48px;border:0;border-radius:12px;font-size:15px;font-weight:700;background:#15803d;color:#fff}",
+        ".pay-form button:active{background:#166534}",
+        ".pay-form button:disabled{background:#1e293b;color:var(--muted)}",
+        ".due .hint{margin:8px 0 0;font-size:12.5px;color:var(--muted)}",
+        ".due .empty{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;display:grid;gap:10px}",
+        ".due .empty p{margin:0}",
+        ".due .empty .btn-link{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:12px;background:#2563eb;color:#fff;text-decoration:none;font-weight:700;font-size:15px}",
+        "",
+    ]
+)
+
+
+def write(rel, content):
+    path = os.path.join(ROOT, rel)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(content)
+    print("wrote", rel.replace(os.sep, "/"), os.path.getsize(path), "bytes")
+
+
+write(os.path.join("app", "commitments", "templates", "commitments.html"), DUE_PAGE)
+write(os.path.join("app", "commitments", "templates", "_commitment_msg.html"), MSG_PART)
+write(os.path.join("app", "static", "commitments.css"), CSS)

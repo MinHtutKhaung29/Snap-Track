@@ -8,11 +8,15 @@
   <link rel="stylesheet" href="/static/base.css">
   <link rel="stylesheet" href="/static/chat.css">
   <link rel="stylesheet" href="/static/receipts.css">
+  {% block head %}{% endblock %}
 </head>
 <body>
   <header class="top">
     <a class="brand" href="/">Snap &amp; Track</a>
-    <nav class="nav">{% block nav %}{% endblock %}</nav>
+    <nav class="nav">
+      {% if user %}<a href="/commitments">支払い予定</a>{% endif %}
+      {% block nav %}{% endblock %}
+    </nav>
   </header>
   <main class="wrap">{% block content %}{% endblock %}</main>
   <footer class="foot">{% block foot %}{% endblock %}</footer>
