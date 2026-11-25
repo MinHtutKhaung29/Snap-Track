@@ -27,10 +27,19 @@ def step(name, ok, detail=""):
 
 
 def send(page, text):
+    before = page.locator("#thread .msg").count()
     page.fill('input[name="message"]', text)
     try:
-        page.click('.composer button[type="submit"]', timeout=240000)
-        page.wait_for_load_state("networkidle", timeout=240000)
+        page.click('#send-btn', timeout=240000)
+        page.wait_for_timeout(150)
+        page.wait_for_function(
+            "(n) => { var f = document.getElementById('chat-form'); return f.dataset.busy === '0' "
+            "&& document.querySelectorAll('#thread .thinking').length === 0 "
+            "&& document.querySelectorAll('#thread .msg').length > n; }",
+            arg=before,
+            timeout=240000,
+        )
+        page.wait_for_load_state("networkidle", timeout=60000)
     except Exception as exc:
         shot(page, "error_send_" + str(int(time.time())) + ".png")
         raise exc
