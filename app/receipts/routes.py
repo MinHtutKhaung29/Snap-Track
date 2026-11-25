@@ -1,16 +1,21 @@
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta, timezone
 
-from fastapi import APIRouter, File, Form, Request, UploadFile
-from fastapi.responses import FileResponse, RedirectResponse
+import anyio
+from fastapi import APIRouter, Form, Request
+from fastapi.responses import FileResponse, RedirectResponse, Response
+from python_multipart.multipart import parse_options_header
+from starlette.datastructures import FormData, UploadFile
+from starlette.formparsers import FormParser, MultiPartException, MultiPartParser
 
 from app.chat import tools as toolbox
 from app.receipts import extract, storage
-from app.shared import auth, csrf, db
+from app.shared import ai, auth, csrf, db
 from app.shared.format import jp_date
 
 router = APIRouter()
 JST = timezone(timedelta(hours=9))
+MAX_CONTENT_LENGTH = 6 * 1024 * 1024
 
 ERROR_MESSAGES = {
     "missing_date": "日付を入れてください",
@@ -18,7 +23,33 @@ ERROR_MESSAGES = {
     "upload": "画像を読み込めませんでした（5MBまで）",
     "too_large": "画像が大きすぎます（5MBまで）",
     "not_an_image": "画像ファイルではありません",
+    "quota": "本日の読み取り回数の上限に達しました",
 }
+
+
+class _BodyTooLarge(Exception):
+    pass
+
+
+async def _parse_form(request, max_bytes):
+    content_type_header = request.headers.get("content-type")
+    content_type, _ = parse_options_header(content_type_header)
+
+    async def limited_stream():
+        seen = 0
+        async for chunk in request.stream():
+            seen += len(chunk)
+            if seen > max_bytes:
+                raise _BodyTooLarge()
+            yield chunk
+
+    if content_type == b"multipart/form-data":
+        parser = MultiPartParser(request.headers, limited_stream(), max_files=2, max_fields=10)
+        return await parser.parse()
+    if content_type == b"application/x-www-form-urlencoded":
+        parser = FormParser(request.headers, limited_stream(), max_fields=10)
+        return await parser.parse()
+    return FormData()
 
 QUEUE_SQL = (
     "SELECT r.receipt_id, r.image_path, r.uploaded_at, r.read_status, r.extracted "
@@ -100,19 +131,44 @@ def _render_queue(request, user, error_message=None, override=None, status_code=
 
 
 @router.post("/receipts/upload")
-async def upload(request: Request, photo: UploadFile = File(None), csrf_token: str = Form("")):
-    csrf.verify_token(request, csrf_token)
+def upload(request: Request):
+    raw_length = request.headers.get("content-length")
+    if raw_length is not None:
+        try:
+            content_length = int(raw_length)
+        except ValueError:
+            return Response(status_code=400)
+        if content_length < 0:
+            return Response(status_code=400)
+        if content_length > MAX_CONTENT_LENGTH:
+            return Response(status_code=413)
     user = auth.current_user(request)
     if user is None:
         return RedirectResponse("/login", status_code=303)
-    if photo is None:
-        return RedirectResponse("/receipts", status_code=303)
-    data = await photo.read()
+    form = None
+    try:
+        try:
+            form = anyio.from_thread.run(_parse_form, request, MAX_CONTENT_LENGTH)
+        except _BodyTooLarge:
+            return Response(status_code=413)
+        except MultiPartException:
+            return RedirectResponse("/receipts?error=upload", status_code=303)
+        csrf_token = form.get("csrf_token") or ""
+        csrf.verify_token(request, csrf_token)
+        photo = form.get("photo")
+        if photo is None or not isinstance(photo, UploadFile):
+            return RedirectResponse("/receipts", status_code=303)
+        data = storage.read_bounded(photo.file)
+    finally:
+        if form is not None:
+            anyio.from_thread.run(form.close)
     try:
         relative, size, dimensions = storage.save_receipt_image(data)
     except storage.UploadError as exc:
         code = str(exc) if str(exc) in ("too_large", "not_an_image") else "upload"
         return RedirectResponse(f"/receipts?error={code}", status_code=303)
+    if not ai.reserve_quota(user["user_id"]):
+        return RedirectResponse("/receipts?error=quota", status_code=303)
     receipt_id = db.execute(
         "INSERT INTO receipts (user_id, image_path, read_status) VALUES (%s, %s, 'processing')",
         (user["user_id"], relative),
@@ -214,4 +270,4 @@ def discard(request: Request, receipt_id: int, csrf_token: str = Form("")):
         "UPDATE receipts SET discarded_at = NOW() WHERE receipt_id = %s AND user_id = %s AND discarded_at IS NULL",
         (receipt_id, user["user_id"]),
     )
-    return RedirectResponse("/receipts", status_code=303)
+    return RedirectResponse("/receipts?discarded=1", status_code=303)

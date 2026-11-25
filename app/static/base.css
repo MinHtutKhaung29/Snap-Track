@@ -93,7 +93,11 @@ h1{margin:0 0 6px;font-size:22px}
 .actions .act{width:100%;min-height:52px;border:0;border-radius:12px;font-weight:700;font-size:15px;white-space:nowrap}
 .actions>.act{flex:1;width:auto}
 .actions .ghost{background:transparent;border:1px solid var(--line);color:var(--fg)}
-.danger{width:100%;min-width:56px;min-height:52px;border-radius:12px;border:1px solid var(--line);background:transparent;color:#f87171;font-size:18px}
+.danger{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;min-width:60px;min-height:52px;border-radius:12px;border:1px solid var(--line);background:transparent;color:#f87171;font-size:16px;line-height:1}
+.danger span{font-size:10px;color:var(--muted)}
+.note{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#132a1e;color:#86efac;font-size:13px}
+.discard-inline{margin:10px 0 0}
+.discard-inline button{width:100%;min-height:44px;border-radius:10px;font-size:13px}
 .queue-edit summary{display:none}
 .swipe-hint{margin:12px 0 0;font-size:12px;color:var(--muted);text-align:center}
 .empty{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 20px;text-align:center}

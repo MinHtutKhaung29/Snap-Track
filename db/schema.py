@@ -166,8 +166,8 @@ def apply_schema(cursor):
 
 def seed_categories(cursor):
     sql = (
-        "INSERT INTO categories (code, category_name, kind, sort_order) VALUES (%s, %s, %s, %s) "
-        "ON DUPLICATE KEY UPDATE category_name = VALUES(category_name), sort_order = VALUES(sort_order)"
+        "INSERT INTO categories (code, category_name, kind, sort_order) VALUES (%s, %s, %s, %s) AS new "
+        "ON DUPLICATE KEY UPDATE category_name = new.category_name, sort_order = new.sort_order"
     )
     for row in SEED_CATEGORIES:
         cursor.execute(sql, row)
