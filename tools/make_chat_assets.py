@@ -134,7 +134,7 @@ CHAT = "\n".join(
         "ta.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&e.keyCode!==229){e.preventDefault();if(form.requestSubmit){form.requestSubmit();}else{form.submit();}}});",
         "if(window.ResizeObserver){new ResizeObserver(measure).observe(composer);}",
         "function bottom(){window.scrollTo(0,document.body.scrollHeight);}",
-        "function bubble(text){var d=document.createElement('div');d.className='msg me';var p=document.createElement('p');p.textContent=text;d.appendChild(p);thread.appendChild(d);}",
+        "function bubble(text){var d=document.createElement('div');d.className='msg me';var p=document.createElement('p');p.textContent=text;d.appendChild(p);thread.appendChild(d);var intro=thread.querySelector('.intro');if(intro){intro.remove();}}",
         "function thinking(){var d=document.createElement('div');d.className='msg bot thinking';d.innerHTML='<i></i><i></i><i></i>';thread.appendChild(d);return d;}",
         "function fail(){var d=document.createElement('div');d.className='msg bot';var p=document.createElement('p');p.textContent='送信できませんでした。通信を確認してもう一度お試しください。';d.appendChild(p);thread.appendChild(d);}",
         "form.addEventListener('submit',function(e){",

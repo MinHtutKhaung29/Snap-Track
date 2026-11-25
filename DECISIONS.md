@@ -71,3 +71,15 @@
   - a 60 s timeout failed a valid turn, so `ai.generate` retries three times with backoff on timeouts and 5xx.
 - **Result:** 9/9 end-to-end checks pass against real Gemini, including the gate holding a `先週` request as a proposal and the final answer being numerically correct (¥1,200 after undoing ¥850).
 - **Files:** `app/shared/ai.py`, `app/shared/config.py`, `tests/smoke_chat.py`, `tools/repro_request.py`, `tools/set_env_value.py`
+
+### 2026-11-25 — M4 close-out: two chat bugs, notebooks brought back in line
+- **What:** handoff spot-check, greeting-card fix, no-reload timestamp fix, full re-verification, integration
+- **Why:** the handoff's queue item 2 was the only item that did not need an owner gate, and the notebooks had stopped tracking P2/P3/M4
+- **Decisions:**
+  - Every handoff claim was re-checked before being trusted. Two did not hold: the branch was 21 commits ahead of `main` (not four), and "no bubble timestamps" was only true on the no-reload path because `POST /chat/send` rendered the partial without `show_time`.
+  - The timestamp fix went to the render site (pass `show_time`) rather than into the client script, so a reload and an appended bubble produce the same markup.
+  - The new greeting-card check was proven non-vacuous: old template 10/11, new template 12/12. A check that cannot fail is not evidence.
+  - The full seven-suite gate was re-run after the change, never a subset: a partial run is what let a three-commit regression through earlier.
+  - The owner authorised the restart of 8010. It now runs detached (pid 4960, log in `%TEMP%`), which is the accepted trade-off for a demo server that does not reload Python.
+  - `MEMORY.md` was rewritten because it predated P2/P3/M4. The P2/P3/M4 rationale is not reconstructed from memory: it stays in the commit messages and `docs/handoff/2026-11-25-ui-foundation.md`.
+- **Files:** `tools/make_chat_assets.py`, `app/chat/templates/chat.html`, `app/chat/routes.py`, `.verify/journeys/chat.py`, `MEMORY.md`, `DECISIONS.md`
