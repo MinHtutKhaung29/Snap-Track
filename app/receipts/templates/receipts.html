@@ -18,15 +18,19 @@
   {% else %}
   <div class="shot-row">
     <details class="shot">
-      <summary><img class="thumb" src="/receipts/{{ card.receipt_id }}/image" alt="取り込んだ写真" width="96" height="96"></summary>
+      <summary>
+        <img class="thumb" src="/receipts/{{ card.receipt_id }}/image" alt="取り込んだ写真" width="96" height="96">
+        <span class="shot-info">
+          <span class="shot-label">{% if card.mode == "unreadable" %}読み取れません{% else %}確認待ち{% endif %}</span>
+          <span class="shot-count">{{ index }} / {{ total }}</span>
+        </span>
+        <span class="shot-more">拡大</span>
+      </summary>
       <div class="shot-full"><img src="/receipts/{{ card.receipt_id }}/image" alt="" loading="lazy"></div>
     </details>
-    <div class="shot-info">
-      <span class="shot-count">{{ index }} / {{ total }}</span>
-      <span class="shot-label">{% if card.mode == "unreadable" %}読み取れません{% else %}確認待ち{% endif %}</span>
-    </div>
   </div>
   {% if card.mode == 'unreadable' %}
+  <footer class="form-foot">
   <div class="ask">
     <div class="ask-note">
       <p class="ask-title">お支払いとして読み取れませんでした</p>
@@ -45,8 +49,10 @@
       <button type="submit" class="secondary btn-link">捨てる</button>
     </form>
   </details>
+  </footer>
   {% else %}
   {% set shop_value = override.shop or card.data.shop or "" %}
+  <footer class="form-foot">
   <form method="post" action="/receipts/{{ card.receipt_id }}/save" class="ask" id="save-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     {% if card.mode == 'ask' %}
@@ -103,6 +109,7 @@
       <button type="submit" class="secondary btn-link">捨てる</button>
     </form>
   </details>
+  </footer>
   {% endif %}
   {% endif %}
 </section>
