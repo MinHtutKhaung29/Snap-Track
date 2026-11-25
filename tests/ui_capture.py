@@ -28,7 +28,7 @@ def step(name, ok, detail=""):
 
 def send(page, text):
     before = page.locator("#thread .msg").count()
-    page.fill('input[name="message"]', text)
+    page.fill('[name="message"]', text)
     try:
         page.click('#send-btn', timeout=240000)
         page.wait_for_timeout(150)

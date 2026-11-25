@@ -50,16 +50,16 @@ def main():
 
         record("chat page has the async form", page.locator('#chat-form[data-busy="0"]').count() == 1)
 
-        page.fill('input[name="message"]', "今日 ランチ 850円")
+        page.fill('[name="message"]', "今日 ランチ 850円")
         started = time.time()
-        page.press('input[name="message"]', "Enter")
+        page.press('[name="message"]', "Enter")
 
         page.wait_for_timeout(350)
         mid = time.time()
         bubble = page.locator("#thread .msg.me").last
         bubble_text = bubble.inner_text() if page.locator("#thread .msg.me").count() else ""
         dots = page.locator("#thread .thinking").count()
-        input_value = page.input_value('input[name="message"]')
+        input_value = page.input_value('[name="message"]')
         shot(page, "01_instant.png")
         record(
             "user bubble appears before the reply",
@@ -80,8 +80,8 @@ def main():
         record("reply card arrives", "記録しました" in page.content(), "reply after " + str(round((done - started) * 1000)) + "ms")
         record("input is usable again", page.locator('#send-btn').is_enabled())
 
-        page.fill('input[name="message"]', "今月の食費いくら?")
-        page.press('input[name="message"]', "Enter")
+        page.fill('[name="message"]', "今月の食費いくら?")
+        page.press('[name="message"]', "Enter")
         page.wait_for_function(
             "() => document.querySelectorAll('#thread .bot.answer').length > 0", timeout=180000
         )
