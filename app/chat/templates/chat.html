@@ -24,24 +24,32 @@
   {% include "_msg.html" %}
   {% endfor %}
 </section>
-<form method="post" action="/receipts/upload" enctype="multipart/form-data" class="cam">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-  <label class="cam-label" title="レシートを撮る">📷
-    <input type="file" name="photo" accept="image/*" capture="environment" onchange="this.form.submit()">
-  </label>
-</form>
-<form method="post" action="/chat" class="composer" id="chat-form" data-busy="0">
+<div class="composer" id="composer">
   <div class="composer-inner">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <input type="text" name="message" placeholder="今日 ランチ 850円" autocomplete="off" required autofocus>
-    <button type="submit" id="send-btn">送信</button>
+    <form method="post" action="/receipts/upload" enctype="multipart/form-data" class="cam">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label class="cam-btn" title="レシートを撮る" aria-label="レシートを撮る">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/></svg>
+        <input type="file" name="photo" accept="image/*" capture="environment" onchange="this.form.submit()">
+      </label>
+    </form>
+    <form method="post" action="/chat" class="chat-form" id="chat-form" data-busy="0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <textarea name="message" rows="1" placeholder="今日 ランチ 850円" autocomplete="off" required autofocus></textarea>
+      <button type="submit" id="send-btn" class="send">送信</button>
+    </form>
   </div>
-</form>
+</div>
 {% endblock %}
 {% block foot %}
 <script>
 (function(){
-var form=document.getElementById('chat-form'),thread=document.getElementById('thread'),input=form.querySelector('input[name=message]'),btn=document.getElementById('send-btn');
+var form=document.getElementById('chat-form'),thread=document.getElementById('thread'),ta=form.querySelector('textarea[name=message]'),btn=document.getElementById('send-btn'),composer=document.getElementById('composer');
+function fit(){ta.style.height='0px';var max=parseFloat(getComputedStyle(ta).maxHeight)||140;ta.style.height=Math.min(ta.scrollHeight,max)+'px';ta.style.overflowY=ta.scrollHeight>max?'auto':'hidden';}
+function measure(){if(composer){document.documentElement.style.setProperty('--composer-h',composer.offsetHeight+'px');}}
+ta.addEventListener('input',fit);
+ta.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&e.keyCode!==229){e.preventDefault();if(form.requestSubmit){form.requestSubmit();}else{form.submit();}}});
+if(window.ResizeObserver){new ResizeObserver(measure).observe(composer);}
 function bottom(){window.scrollTo(0,document.body.scrollHeight);}
 function bubble(text){var d=document.createElement('div');d.className='msg me';var p=document.createElement('p');p.textContent=text;d.appendChild(p);thread.appendChild(d);}
 function thinking(){var d=document.createElement('div');d.className='msg bot thinking';d.innerHTML='<i></i><i></i><i></i>';thread.appendChild(d);return d;}
@@ -49,10 +57,10 @@ function fail(){var d=document.createElement('div');d.className='msg bot';var p=
 form.addEventListener('submit',function(e){
   if(!window.fetch){return;}
   e.preventDefault();
-  var text=input.value.trim();
+  var text=ta.value.trim();
   if(!text||form.dataset.busy==='1'){return;}
   bubble(text);
-  input.value='';input.focus();bottom();
+  ta.value='';fit();ta.focus();bottom();
   var dots=thinking();bottom();
   form.dataset.busy='1';btn.disabled=true;
   var data=new FormData(form);data.set('message',text);
@@ -62,8 +70,8 @@ form.addEventListener('submit',function(e){
     .catch(function(){dots.remove();fail();})
     .then(function(){form.dataset.busy='0';btn.disabled=false;bottom();});
 });
-document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){input.value=c.dataset.fill;input.focus();});});
-bottom();
+document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){ta.value=c.dataset.fill;fit();ta.focus();});});
+fit();bottom();
 })();
 </script>
 {% endblock %}
