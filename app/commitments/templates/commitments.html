@@ -1,54 +1,36 @@
 {% extends "base.html" %}
 {% block title %}支払い予定 — Snap &amp; Track{% endblock %}
-{% block head %}<link rel="stylesheet" href="/static/commitments.css">{% endblock %}
-{% block nav %}
-  <span class="who"><span class="uname">{{ user.name }}</span>
-    <a class="linkbtn" href="/chat">チャット</a>
-    <a class="linkbtn" href="/receipts">レシート</a>
-    <form method="post" action="/logout">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button type="submit" class="linkbtn">ログアウト</button>
-    </form>
-  </span>
-{% endblock %}
+{% block heading %}支払い予定{% endblock %}
 {% block content %}
 <section class="due">
-  <h1>支払い予定</h1>
   {% if note %}<p class="note" role="status">{{ note }}</p>{% endif %}
   {% if error_message %}<p class="err" role="alert">{{ error_message }}</p>{% endif %}
   {% if not rows %}
   <div class="empty">
-    <p>支払い予定はありません。</p>
+    <p class="empty-title">支払い予定はありません</p>
     <p class="hint">チャットで「家賃 85000円 27日払い」のように話しかけると登録できます。</p>
     <a class="primary btn-link" href="/chat">チャットへ</a>
   </div>
   {% else %}
-  <ul class="due-list">
+  <ul class="list">
     {% for r in rows %}
-    <li class="due-row{% if r.overdue %} overdue{% endif %}">
-      <div class="due-head">
-        <span class="pill">{% if r.kind == "installment" %}分割払い{% else %}毎月の支払い{% endif %}</span>
-        {% if r.overdue %}<span class="flag">期限超過</span>{% endif %}
+    <li class="item{% if r.is_due %} due{% endif %}{% if r.overdue %} overdue{% endif %}">
+      <div class="item-head">
+        <span class="item-title">{{ r.title }}</span>
+        <span class="item-kind">{{ "分割払い" if r.kind == "installment" else "毎月" }}</span>
       </div>
-      <div class="due-title">{{ r.title }}</div>
-      <div class="due-amt">¥{{ "{:,}".format(r.next_amount) }}</div>
-      <div class="due-meta">
-        <span class="sub">次回 {{ r.next_due_date_label }}</span>
-        <span class="pill">{{ r.category_name }}</span>
-      </div>
-      <div class="due-meta">
-        {% if r.kind == "installment" %}
-        <span class="sub">支払済み {{ r.paid_count }}/{{ r.months }} 回</span>
-        <span class="sub">残り {{ r.remaining }} 回</span>
-        {% else %}
-        <span class="sub">支払済み {{ r.paid_count }} 回</span>
-        {% endif %}
+      <div class="item-amount">¥{{ "{:,}".format(r.next_amount) }}</div>
+      <div class="sheet">
+        <div class="row"><span class="row-k">次回</span><span class="row-v">{{ r.next_due_date_label }}{% if r.overdue %} <em class="flag">期限超過</em>{% endif %}</span></div>
+        <div class="row"><span class="row-k">分類</span><span class="row-v">{{ r.category_name }}</span></div>
+        <div class="row"><span class="row-k">支払済み</span><span class="row-v">{% if r.kind == "installment" %}{{ r.paid_count }} / {{ r.months }} 回{% else %}{{ r.paid_count }} 回{% endif %}</span></div>
+        {% if r.kind == "installment" %}<div class="row"><span class="row-k">残り</span><span class="row-v">{{ r.remaining }} 回</span></div>{% endif %}
       </div>
       <form method="post" action="/commitments/{{ r.id }}/pay" class="pay-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="hidden" name="expected_due_date" value="{{ r.next_due_date }}">
         <input type="hidden" name="expected_last_txn_id" value="{{ r.last_txn_id }}">
-        <button type="submit" class="primary"{% if not r.is_due %} disabled{% endif %}>支払った</button>
+        <button type="submit" class="{{ "primary" if r.is_due else "ghost" }}"{% if not r.is_due %} disabled{% endif %}>支払った</button>
       </form>
       {% if not r.is_due %}<p class="hint">支払期日が来ると押せます。</p>{% endif %}
     </li>

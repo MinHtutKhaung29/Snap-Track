@@ -2,10 +2,10 @@
 {% if p and p.type == "commitment_payment" and p.status == "pending" %}
 <div class="msg bot entry pending">
   <div class="label">この支払いを記録しますか？</div>
-  <div class="amt">¥{{ "{:,}".format(p.preview.amount) }}</div>
-  <div class="meta"><span class="pill">{{ p.preview.title }}</span><span class="sub">{{ p.preview.due_date_label }}</span></div>
-  <div class="meta"><span class="pill">{{ p.preview.category }}</span><span class="sub">記録日 {{ p.preview.date_label }}</span></div>
-  <div class="row">
+  <div class="amt">−¥{{ "{:,}".format(p.preview.amount) }}</div>
+  <div class="meta"><span>{{ p.preview.title }}</span><span class="sub">{{ p.preview.due_date_label }}</span></div>
+  <div class="meta"><span class="cat"><i></i>{{ p.preview.category }}</span><span class="sub">記録日 {{ p.preview.date_label }}</span></div>
+  <div class="acts">
     <form method="post" action="/chat/confirm/{{ m.message_id }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <button type="submit" class="primary">支払った</button>
@@ -20,10 +20,10 @@
 <div class="msg bot entry pending">
   <div class="label">この支払い予定を作りますか？</div>
   <div class="amt">¥{{ "{:,}".format(p.preview.amount) }}</div>
-  <div class="meta"><span class="pill">{{ p.preview.title }}</span><span class="pill">{{ p.preview.category }}</span></div>
+  <div class="meta"><span>{{ p.preview.title }}</span><span class="cat"><i></i>{{ p.preview.category }}</span></div>
   <div class="meta"><span class="sub">{{ p.preview.schedule_label }}</span><span class="sub">初回 {{ p.preview.first_due_date_label }}</span></div>
   <p class="warn">作成しても支出にはなりません。支払ったときに記録されます。</p>
-  <div class="row">
+  <div class="acts">
     <form method="post" action="/chat/confirm/{{ m.message_id }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <button type="submit" class="primary">作成する</button>
@@ -36,12 +36,11 @@
 </div>
 {% elif p and p.type == "commitment" and p.commitment %}
 <div class="msg bot entry">
-  <div class="label">支払い予定を作成しました</div>
   <div class="amt">¥{{ "{:,}".format(p.commitment.amount) }}</div>
-  <div class="meta"><span class="pill">{{ p.commitment.title }}</span><span class="pill">{{ p.commitment.category_name or "" }}</span></div>
+  <div class="meta"><span>{{ p.commitment.title }}</span>{% if p.commitment.category_name %}<span class="cat"><i></i>{{ p.commitment.category_name }}</span>{% endif %}</div>
   <div class="meta"><span class="sub">{{ p.commitment.schedule_label }}</span><span class="sub">初回 {{ p.commitment.next_due_date_label }}</span></div>
-  <a class="linkbtn" href="/commitments">支払い予定を見る</a>
+  <a class="more" href="/commitments">支払い予定を見る</a>
 </div>
 {% else %}
-<div class="msg bot"><p>{{ m.body }}</p></div>
+<div class="msg bot"><p>{{ m.body }}</p>{% if show_time and m.created_at %}<span class="ts">{{ m.created_at.strftime("%H:%M") }}</span>{% endif %}</div>
 {% endif %}

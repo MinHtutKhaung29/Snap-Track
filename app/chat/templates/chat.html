@@ -1,18 +1,11 @@
 {% extends "base.html" %}
 {% block title %}チャット — Snap &amp; Track{% endblock %}
-{% block nav %}
-  <span class="who"><span class="uname">{{ user.name }}</span>
-    <a class="linkbtn" href="/receipts">レシート</a>
-    <form method="post" action="/logout">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button type="submit" class="linkbtn">ログアウト</button>
-    </form>
-  </span>
-{% endblock %}
+{% block heading %}チャット{% endblock %}
 {% block content %}
 <section class="thread" id="thread">
   {% if not messages %}
   <div class="msg bot intro">
+    <p class="hello">こんにちは、{{ user.name }} さん</p>
     <p>支出や質問をそのまま送ってください。</p>
     <p class="ex">
       <button type="button" class="chip" data-fill="今日 ランチ 850円">今日 ランチ 850円</button>
@@ -21,6 +14,13 @@
   </div>
   {% endif %}
   {% for m in messages %}
+  {% set prev = messages[loop.index0 - 1] if loop.index0 else none %}
+  {% set nxt = messages[loop.index0 + 1] if not loop.last else none %}
+  {% set day = m.created_at.date() if m.created_at else none %}
+  {% if day != (prev.created_at.date() if prev and prev.created_at else none) %}
+  <div class="day"><span>{% if today and day == today %}今日{% elif day %}{{ day.year }}/{{ day.month }}/{{ day.day }}{% else %}このスレッド{% endif %}</span></div>
+  {% endif %}
+  {% set show_time = not nxt or nxt.role != m.role %}
   {% include "_msg.html" %}
   {% endfor %}
 </section>
