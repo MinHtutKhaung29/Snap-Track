@@ -75,8 +75,13 @@ def chat_send_json(request: Request, message: str = Form(""), csrf_token: str = 
             commitment_partial
             if isinstance(row.get("payload"), dict) and row["payload"].get("type") in COMMITMENT_CARD_TYPES
             else default_partial
-        ).render(m=row, csrf_token=csrf_token, categories=categories)
-        for row in rows
+        ).render(
+            m=row,
+            csrf_token=csrf_token,
+            categories=categories,
+            show_time=index == len(rows) - 1 or rows[index + 1]["role"] != row["role"],
+        )
+        for index, row in enumerate(rows)
     )
     return JSONResponse({"ok": bool(result.get("ok")), "type": result.get("type"), "html": html})
 

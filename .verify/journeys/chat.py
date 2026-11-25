@@ -6,10 +6,24 @@ def flow(page):
     v.register(page, address)
     uid = v.user_id(address)
     v.record("registered and reached chat", uid is not None, "user_id=" + str(uid))
+    v.record(
+        "greeting card is shown before the first message",
+        "支出や質問をそのまま送ってください" in page.content(),
+    )
 
     bubble, to_bubble, to_reply = v.send(page, "今日 ランチ 850円")
     v.record("message bubble shows before the reply", "850" in bubble, str(to_bubble) + "ms")
+    v.record(
+        "greeting card leaves once a message exists",
+        "支出や質問をそのまま送ってください" not in page.content(),
+    )
     v.record("reply arrives", "記録しました" in page.content(), str(to_reply) + "ms")
+    times = page.locator("#thread .pair .ts")
+    v.record(
+        "the appended card carries a time without a reload",
+        times.count() > 0,
+        times.first.inner_text() if times.count() else "no timestamp rendered",
+    )
     rows = v.db().fetch_all(
         "SELECT amount, source_kind FROM transactions WHERE user_id = %s AND deleted_at IS NULL", (uid,)
     )
