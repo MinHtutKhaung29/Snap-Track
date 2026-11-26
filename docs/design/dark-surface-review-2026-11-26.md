@@ -82,4 +82,4 @@ Owner chose: unify the date style **and** check/fix long recipient names at 390 
 
 1. Restart 8010 when convenient — the date/override line is Python; templates and CSS are already live.
 2. Say whether the stray 8011 instance may be closed.
-3. Say whether this branch goes to GitHub for review (`fix/date-style-and-long-recipient`, 5 files, +34/−8). Nothing has been committed or pushed.
+3. Pushed for review as PR #4 (`fix/date-style-and-long-recipient`, 6 files + the handoff note). Merging is the owner's call; nothing was merged.

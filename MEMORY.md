@@ -22,6 +22,7 @@ Snap-Track: a spending tracker where you type or photograph a payment in one cha
 - Theme captures regenerated from the working tree: `documents/_extract/theme/*.png`; pre-fix sets kept in `prior-20261125T1559/` and `prior-20261126T1035/`
 
 ## Next Steps
+- PR #4 waits for the owner: `fix/date-style-and-long-recipient` → `main`.
 - Owner restarts 8010 when convenient — the date/override change is Python and only takes effect after a restart; templates and CSS are already live.
 - A stray instance is listening on 8011 (old code, not started by this session) and will confuse future verification; it needs an owner decision, not a silent kill.
 - Monthly summary surface (needs owner go-ahead on chat answer vs card).
