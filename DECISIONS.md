@@ -83,3 +83,8 @@
   - The owner authorised the restart of 8010. It now runs detached (pid 4960, log in `%TEMP%`), which is the accepted trade-off for a demo server that does not reload Python.
   - `MEMORY.md` was rewritten because it predated P2/P3/M4. The P2/P3/M4 rationale is not reconstructed from memory: it stays in the commit messages and `docs/handoff/2026-11-25-ui-foundation.md`.
 - **Files:** `tools/make_chat_assets.py`, `app/chat/templates/chat.html`, `app/chat/routes.py`, `.verify/journeys/chat.py`, `MEMORY.md`, `DECISIONS.md`
+
+### 2026-11-25 — GitHub messages stay short and plain
+- **What:** added one rule to `AGENTS.md`: commit messages and PRs use one short, everyday sentence; the real why belongs in this file.
+- **Why:** the owner asked for it — long technical write-ups were burying the simple answer.
+- **Files:** `AGENTS.md`
