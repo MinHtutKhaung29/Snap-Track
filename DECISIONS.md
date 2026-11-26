@@ -88,3 +88,14 @@
 - **What:** added one rule to `AGENTS.md`: commit messages and PRs use one short, everyday sentence; the real why belongs in this file.
 - **Why:** the owner asked for it — long technical write-ups were burying the simple answer.
 - **Files:** `AGENTS.md`
+
+### 2026-11-26 — Receipt card: one date spelling, and a payee that cannot be cut off
+- **What:** the receipt card now prints the date the same way the chat card does, and a long payee wraps onto more lines instead of ending in an ellipsis.
+- **Why:** the owner's review of the dark-surface captures approved these two, and both were visible defects: `2026/11/25` beside `2026年11月26日（木）` on the neighbouring surface, and `株式会社エヌ・ティ・ティ・ドコモ・モ…` for a payee the user is being asked to confirm.
+- **Decisions:**
+  - The date uses the existing `jp_date` helper rather than a second formatter. `card.date_label` was already computed and simply ignored by the template, so the fix was to make the template read it and to feed it the override date when a validation round-trip happens.
+  - The payee wraps (`white-space:normal; overflow-wrap:anywhere`) instead of ellipsising, because the whole point of the card is that the user can read what will be saved. `row-shop` scopes it so amount and date keep their single-line alignment.
+  - Measured before and after at 390x844 rather than eyeballed: clipped 658 px of text into a 290 px box before, `scroll == client` after, and no horizontal page overflow in either state.
+  - `base.css` already truncated every `.row-v` with an ellipsis; the shop row is the one place that must not, which is why the change is a scoped override and not a global one.
+  - The `.verify` receipts journey asserted `.swipe`, a class the M4 rebuild deleted, so it could never pass and was never part of M4's evidence. It now asserts the rendered card, the Japanese date form, and the long-payee wrap; 5/5 on both the working tree and the live server.
+- **Files:** `tools/make_receipt_assets.py`, `app/receipts/templates/receipts.html`, `app/static/receipts.css`, `app/receipts/routes.py`, `.verify/journeys/receipts.py`, `docs/design/dark-surface-review-2026-11-26.md`
