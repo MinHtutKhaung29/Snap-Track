@@ -1,4 +1,8 @@
+import re
+
 import _common as v
+
+LONG_RECIPIENT = "株式会社エヌ・ティ・ティ・ドコモ・モバイル・コミュニケーションズ東日本支社お客様センター"
 
 
 def flow(page):
@@ -15,8 +19,25 @@ def flow(page):
     page.wait_for_load_state("networkidle", timeout=120000)
     page.wait_for_timeout(400)
     v.shot(page, "01-receipt-card.png")
-    v.record("receipt card renders", page.locator(".swipe").count() == 1)
+    v.record("receipt card renders", page.locator(".row-hero").count() == 1)
     v.record("card offers one primary action", page.locator(".actions .primary").count() == 1)
+    date_text = page.locator(".row", has_text="日付").first.locator(".row-v").inner_text().strip()
+    v.record(
+        "date reads in the Japanese long form",
+        bool(re.fullmatch(r"\d{4}年\d{1,2}月\d{1,2}日（[月火水木金土日]）", date_text)),
+        date_text,
+    )
+    shop = page.locator(".row-shop .row-v").first
+    shop.evaluate("(el, s) => { el.textContent = s; }", LONG_RECIPIENT)
+    page.wait_for_timeout(150)
+    box = shop.evaluate(
+        "(el) => ({client: el.clientWidth, scroll: el.scrollWidth,"
+        " page: document.documentElement.scrollWidth - document.documentElement.clientWidth})"
+    )
+    v.record("long recipient wraps instead of clipping", box["scroll"] <= box["client"] + 1 and box["page"] <= 0, box)
+    v.shot(page, "01b-long-recipient.png")
+    page.goto(v.BASE + "/receipts", wait_until="networkidle")
+    page.wait_for_timeout(400)
     page.locator(".actions .primary").first.click()
     page.wait_for_load_state("networkidle", timeout=120000)
     page.wait_for_timeout(400)

@@ -101,11 +101,12 @@ def _render_queue(request, user, error_message=None, override=None, status_code=
     rows = _pending(user["user_id"])
     card = rows[0] if rows else None
     if card:
-        if card["data"].get("date"):
+        label_source = (override or {}).get("date") or card["data"].get("date")
+        if label_source:
             try:
-                card["date_label"] = jp_date(card["data"]["date"])
+                card["date_label"] = jp_date(label_source)
             except Exception:
-                card["date_label"] = card["data"]["date"]
+                card["date_label"] = label_source
         data = card["data"] or {}
         if not data.get("shop") and data.get("source"):
             data["shop"] = data["source"]

@@ -72,13 +72,13 @@
       <details class="row{% if card.want_date %} row-missing{% endif %}"{% if card.want_date %} open{% endif %}>
         <summary>
           <span class="row-k">日付</span>
-          <span class="row-v">{% if card.want_date %}<em class="need">教えてください</em>{% else %}{{ ((override.date or card.data.date or "")|string).replace("-", "/") }}{% endif %}</span>
+          <span class="row-v">{% if card.want_date %}<em class="need">教えてください</em>{% else %}{{ card.date_label }}{% endif %}</span>
         </summary>
         <div class="row-edit">
           <input type="date" name="date" value="{{ override.date or card.data.date or today }}">
         </div>
       </details>
-      <details class="row">
+      <details class="row row-shop">
         <summary>
           <span class="row-k">店・内容</span>
           <span class="row-v{% if not shop_value %} muted{% endif %}">{{ shop_value or "未入力" }}</span>

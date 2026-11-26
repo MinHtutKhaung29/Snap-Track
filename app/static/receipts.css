@@ -24,6 +24,8 @@ details.row{display:block;padding:0}
 .row[open] > summary{padding-bottom:4px}
 .row-missing{box-shadow:inset 3px 0 0 var(--warn)}
 .row-v.muted{color:var(--muted)}
+.row-shop > summary{align-items:flex-start;padding-top:10px;padding-bottom:10px}
+.row-shop .row-v{white-space:normal;overflow-wrap:anywhere;overflow:visible;text-overflow:clip;line-height:1.45}
 .amount{font-size:var(--t1);font-weight:600;line-height:1.2;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
 .need{font-style:normal;font-size:var(--t3);font-weight:400;color:var(--warn)}
 .row-edit{display:flex;align-items:baseline;justify-content:flex-end;gap:6px;padding:2px 16px 14px}
