@@ -1,5 +1,7 @@
 import json
 import re
+import sys
+import time
 import unicodedata
 import urllib.error
 import urllib.parse
@@ -81,17 +83,28 @@ def _post(body, timeout):
     )
     last = None
     for attempt, wait in enumerate((timeout, timeout * 2, timeout * 2), start=1):
+        started = time.perf_counter()
         try:
             with urllib.request.urlopen(request, timeout=wait) as response:
                 payload = json.loads(response.read().decode("utf-8"))
+            usage = payload.get("usageMetadata") or {}
+            candidate = (payload.get("candidates") or [{}])[0]
+            print(
+                "ai_attempt ok attempt=%d wait=%d ms=%d in=%s out=%s finish=%s"
+                % (attempt, wait, (time.perf_counter() - started) * 1000, usage.get("promptTokenCount"), usage.get("candidatesTokenCount"), candidate.get("finishReason")),
+                file=sys.stderr,
+                flush=True,
+            )
             break
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", "replace")[:300]
+            print("ai_attempt http attempt=%d code=%d ms=%d" % (attempt, exc.code, (time.perf_counter() - started) * 1000), file=sys.stderr, flush=True)
             if 500 <= exc.code < 600 and attempt < 3:
                 last = AIError("http_" + str(exc.code), detail)
                 continue
             raise AIError("http_" + str(exc.code), detail)
         except Exception as exc:
+            print("ai_attempt fail attempt=%d type=%s ms=%d" % (attempt, type(exc).__name__, (time.perf_counter() - started) * 1000), file=sys.stderr, flush=True)
             last = AIError(type(exc).__name__, str(exc)[:300])
             if attempt < 3:
                 continue
@@ -105,15 +118,21 @@ def _post(body, timeout):
     return {"calls": calls, "text": text.strip()}
 
 
-def generate(system, contents, tools=None, timeout=60):
+def generate(system, contents, tools=None, timeout=None):
+    timeout = timeout or settings.gemini_timeout
     if settings.ai_mode == "stub":
         return stub(contents, tools)
     if not settings.gemini_api_key:
         raise AIError("no_key", "GEMINI_API_KEY is empty")
+    generation = {"temperature": 0}
+    if settings.gemini_thinking in ("minimal", "low", "medium", "high"):
+        generation["thinkingConfig"] = {"thinkingLevel": settings.gemini_thinking}
+    elif settings.gemini_thinking in ("off", "0"):
+        generation["thinkingConfig"] = {"thinkingBudget": 0}
     body = {
         "systemInstruction": {"parts": [{"text": system}]},
         "contents": contents,
-        "generationConfig": {"temperature": 0},
+        "generationConfig": generation,
     }
     if tools:
         body["tools"] = [{"functionDeclarations": tools}]

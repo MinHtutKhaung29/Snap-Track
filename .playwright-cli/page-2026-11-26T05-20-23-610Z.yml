@@ -1,0 +1,84 @@
+- generic [ref=f1e1]:
+  - banner [ref=f1e2]:
+    - heading "チャット" [level=1] [ref=f1e3]
+    - button "ログアウト" [ref=f1e5] [cursor=pointer]
+  - navigation [ref=f1e6]:
+    - link "チャット" [ref=f1e7] [cursor=pointer]:
+      - /url: /chat
+    - link "レシート" [ref=f1e8] [cursor=pointer]:
+      - /url: /receipts
+    - link "支払い予定" [ref=f1e9] [cursor=pointer]:
+      - /url: /commitments
+  - main [ref=f1e10]:
+    - generic [ref=f1e11]:
+      - generic [ref=f1e12]: 今日
+      - generic [ref=f1e14]:
+        - paragraph [ref=f1e15]: 今日 ランチ 850円
+        - generic [ref=f1e16]: 13:50
+      - generic [ref=f1e17]:
+        - generic [ref=f1e18]:
+          - generic [ref=f1e19]: −¥850
+          - generic [ref=f1e20]:
+            - generic [ref=f1e21]: 食費
+            - generic [ref=f1e23]: ランチ
+            - generic [ref=f1e24]: 2026年11月26日（木）
+          - generic [ref=f1e25]: 13:50
+        - generic [ref=f1e26]:
+          - generic [ref=f1e27]: 記録しました
+          - button "取り消す" [ref=f1e28] [cursor=pointer]
+      - generic [ref=f1e29]:
+        - paragraph [ref=f1e30]: 明日 カフェ 420円
+        - generic [ref=f1e31]: 13:54
+      - generic [ref=f1e32]:
+        - paragraph [ref=f1e33]: うまく理解できませんでした。金額と日付をもう一度教えてください。
+        - generic [ref=f1e34]: 13:55
+      - generic [ref=f1e35]:
+        - paragraph [ref=f1e36]: ランチ
+        - generic [ref=f1e37]: 14:15
+      - generic [ref=f1e38]:
+        - generic [ref=f1e39]: この内容で記録しますか？
+        - generic [ref=f1e40]: −¥850
+        - generic [ref=f1e41]:
+          - generic [ref=f1e42]: 食費
+          - generic [ref=f1e44]: ランチ
+        - generic [ref=f1e45]: 2026年11月26日（木）
+        - paragraph [ref=f1e47]: 金額がメッセージにありません。
+        - generic [ref=f1e48]:
+          - button "保存する" [ref=f1e50] [cursor=pointer]
+          - button "やめる" [ref=f1e52] [cursor=pointer]
+        - group [ref=f1e53]:
+          - generic "直す" [ref=f1e54] [cursor=pointer]
+          - option "食費" [selected]
+          - option "交通費"
+          - option "日用品"
+          - option "交際費"
+          - option "光熱費"
+          - option "その他"
+        - generic [ref=f1e55]: 14:15
+      - paragraph [ref=f1e71]: ドラッグストア 1200円
+      - generic [ref=f1e72]:
+        - generic [ref=f1e73]: この内容で記録しますか？
+        - generic [ref=f1e74]: −¥1,200
+        - generic [ref=f1e75]:
+          - generic [ref=f1e76]: 日用品
+          - generic [ref=f1e78]: ドラッグストア
+        - generic [ref=f1e79]: 2026年11月26日（木）
+        - paragraph [ref=f1e81]: 日付は推測です。違っていれば「直す」で変更できます。
+        - generic [ref=f1e82]:
+          - button "保存する" [ref=f1e84] [cursor=pointer]
+          - button "やめる" [ref=f1e86] [cursor=pointer]
+        - group [ref=f1e87]:
+          - generic "直す" [ref=f1e88] [cursor=pointer]
+          - option "食費"
+          - option "交通費"
+          - option "日用品" [selected]
+          - option "交際費"
+          - option "光熱費"
+          - option "その他"
+        - generic [ref=f1e89]: 14:20
+    - generic [ref=f1e57]:
+      - generic [ref=f1e58]:
+        - generic "レシートを撮る" [ref=f1e60] [cursor=pointer]
+        - textbox "今日 ランチ 850円" [active] [ref=f1e65]
+      - button "送信" [disabled] [ref=f1e66]
+  - contentinfo [ref=f1e69]

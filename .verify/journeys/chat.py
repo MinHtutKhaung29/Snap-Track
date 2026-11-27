@@ -8,14 +8,14 @@ def flow(page):
     v.record("registered and reached chat", uid is not None, "user_id=" + str(uid))
     v.record(
         "greeting card is shown before the first message",
-        "支出や質問をそのまま送ってください" in page.content(),
+        page.locator(".intro .hello").count() == 1 and page.locator(".intro .chip").count() == 2,
     )
 
     bubble, to_bubble, to_reply = v.send(page, "今日 ランチ 850円")
     v.record("message bubble shows before the reply", "850" in bubble, str(to_bubble) + "ms")
     v.record(
         "greeting card leaves once a message exists",
-        "支出や質問をそのまま送ってください" not in page.content(),
+        page.locator(".intro").count() == 0,
     )
     v.record("reply arrives", "記録しました" in page.content(), str(to_reply) + "ms")
     times = page.locator("#thread .pair .ts")

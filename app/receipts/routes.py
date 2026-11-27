@@ -95,6 +95,21 @@ def queue(request: Request):
     return _render_queue(request, user, error_message=error_message, force_ask=force_ask)
 
 
+def _card_state(data, override, force_ask=False):
+    payment = data.get("is_payment")
+    if payment is None:
+        payment = data.get("is_receipt", True)
+    typed = str(override.get("amount") or "")
+    display = int(typed) if typed.isdigit() else (data.get("amount") if payment else None)
+    dated = data.get("date") or override.get("date")
+    return {
+        "mode": "ready" if (payment and display and dated and not force_ask) else "ask",
+        "display_amount": display,
+        "want_amount": not display,
+        "want_date": not dated,
+    }
+
+
 def _render_queue(request, user, error_message=None, override=None, status_code=200, force_ask=False):
     categories = _categories()
     cat_map = {c["code"]: c["category_name"] for c in categories}
@@ -116,23 +131,10 @@ def _render_queue(request, user, error_message=None, override=None, status_code=
         chosen_code = (override or {}).get("category_code") or code
         card["display_category"] = cat_map.get(chosen_code) or card["category_name"]
         typed_amount = (override or {}).get("amount")
-        card["display_amount"] = int(typed_amount) if str(typed_amount or "").isdigit() else card["data"].get("amount")
         card["edited"] = bool(typed_amount)
-        payment = card["data"].get("is_payment")
-        if payment is None:
-            payment = card["data"].get("is_receipt", True)
         card["eventype"] = card["data"].get("evidence_type") or "other"
-        card["want_amount"] = not card["display_amount"]
-        card["want_date"] = not (card["data"].get("date") or (override or {}).get("date"))
         card["want_category"] = code == "other"
-        if force_ask:
-            card["mode"] = "ask"
-        elif not payment and not card["display_amount"]:
-            card["mode"] = "unreadable"
-        elif card["want_amount"] or card["want_date"]:
-            card["mode"] = "ask"
-        else:
-            card["mode"] = "ready"
+        card.update(_card_state(card["data"], override or {}, force_ask))
     return _templates(request).TemplateResponse(
         request,
         "receipts.html",
@@ -261,8 +263,11 @@ def save(
         return _render_queue(
             request, user, error_message=ERROR_MESSAGES["missing_date"], override=kept, status_code=400
         )
+    payment = stored.get("is_payment")
+    if payment is None:
+        payment = stored.get("is_receipt", True)
     args = {
-        "amount": amount or stored.get("amount"),
+        "amount": amount or (stored.get("amount") if payment else None),
         "date": resolved_date,
         "source": shop or stored.get("shop") or stored.get("source"),
         "category_code": category_code or stored.get("category_code") or "other",

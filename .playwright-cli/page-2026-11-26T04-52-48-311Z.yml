@@ -1,0 +1,34 @@
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - heading "チャット" [level=1] [ref=e3]
+    - button "ログアウト" [ref=e5] [cursor=pointer]
+  - navigation [ref=e6]:
+    - link "チャット" [ref=e7] [cursor=pointer]:
+      - /url: /chat
+    - link "レシート" [ref=e8] [cursor=pointer]:
+      - /url: /receipts
+    - link "支払い予定" [ref=e9] [cursor=pointer]:
+      - /url: /commitments
+  - main [ref=e10]:
+    - generic [ref=e11]:
+      - generic [ref=e12]: 今日
+      - generic [ref=e14]:
+        - paragraph [ref=e15]: 今日 ランチ 850円
+        - generic [ref=e16]: 13:50
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: −¥850
+          - generic [ref=e20]:
+            - generic [ref=e21]: 食費
+            - generic [ref=e23]: ランチ
+            - generic [ref=e24]: 2026年11月26日（木）
+          - generic [ref=e25]: 13:50
+        - generic [ref=e26]:
+          - generic [ref=e27]: 記録しました
+          - button "取り消す" [ref=e28] [cursor=pointer]
+    - generic [ref=e30]:
+      - generic [ref=e31]:
+        - generic "レシートを撮る" [ref=e33] [cursor=pointer]
+        - textbox "今日 ランチ 850円" [active] [ref=e38]
+      - button "送信" [disabled] [ref=e39]
+  - contentinfo [ref=e42]

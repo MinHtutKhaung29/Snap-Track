@@ -51,10 +51,10 @@ def start_browser():
     return pw, browser, ctx, page
 
 
-def shot(page, name):
+def shot(page, name, full=True):
     os.makedirs(SHOTS, exist_ok=True)
     path = os.path.join(SHOTS, name)
-    page.screenshot(path=path, full_page=True)
+    page.screenshot(path=path, full_page=full)
     return path
 
 

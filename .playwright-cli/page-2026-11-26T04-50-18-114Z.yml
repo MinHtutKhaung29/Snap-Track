@@ -1,0 +1,29 @@
+- generic [active] [ref=f1e1]:
+  - banner [ref=f1e2]:
+    - heading "新規登録" [level=1] [ref=f1e3]
+  - main [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - generic [ref=f1e6]:
+        - generic [ref=f1e7]:
+          - text: 名前
+          - textbox "名前" [ref=f1e8]:
+            - /placeholder: 山田 太郎
+        - generic [ref=f1e9]:
+          - text: メールアドレス
+          - textbox "メールアドレス" [ref=f1e10]:
+            - /placeholder: example@mail.com
+        - generic [ref=f1e11]:
+          - text: パスワード
+          - textbox "パスワード" [ref=f1e12]:
+            - /placeholder: 8文字以上
+        - paragraph [ref=f1e13]: 8文字以上の半角英数字
+        - generic [ref=f1e14]:
+          - text: パスワード（確認）
+          - textbox "パスワード（確認）" [ref=f1e15]:
+            - /placeholder: もう一度入力
+        - button "登録する" [ref=f1e16] [cursor=pointer]
+      - paragraph [ref=f1e17]:
+        - text: 既にアカウントがある場合は
+        - link "ログイン" [ref=f1e18] [cursor=pointer]:
+          - /url: /login
+  - contentinfo [ref=f1e19]

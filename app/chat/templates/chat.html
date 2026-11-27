@@ -4,9 +4,14 @@
 {% block content %}
 <section class="thread" id="thread">
   {% if not messages %}
-  <div class="msg bot intro">
+  <div class="intro">
+    <svg class="intro-mark" width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="2" y="5" width="20" height="15" rx="4" stroke="currentColor" stroke-width="1.5"/>
+      <circle cx="12" cy="12.5" r="3.75" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M8.5 5.2 9.6 3.5h4.8l1.1 1.7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+    </svg>
     <p class="hello">こんにちは、{{ user.name }} さん</p>
-    <p>支出や質問をそのまま送ってください。</p>
+    <p class="intro-lead">支出を送るか、写真をとるだけ。保存する前に、必ず確認します。</p>
     <p class="ex">
       <button type="button" class="chip" data-fill="今日 ランチ 850円">今日 ランチ 850円</button>
       <button type="button" class="chip" data-fill="今月の食費いくら？">今月の食費いくら？</button>
@@ -25,6 +30,7 @@
   {% endfor %}
 </section>
 <div class="composer" id="composer">
+  <div class="composer-row">
   <div class="composer-inner">
     <form method="post" action="/receipts/upload" enctype="multipart/form-data" class="cam">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -36,8 +42,11 @@
     <form method="post" action="/chat" class="chat-form" id="chat-form" data-busy="0">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <textarea name="message" rows="1" placeholder="今日 ランチ 850円" autocomplete="off" required autofocus></textarea>
-      <button type="submit" id="send-btn" class="send">送信</button>
     </form>
+  </div>
+  <button form="chat-form" type="submit" id="send-btn" class="send" aria-label="送信" title="送信">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+  </button>
   </div>
 </div>
 {% endblock %}
@@ -45,7 +54,7 @@
 <script>
 (function(){
 var form=document.getElementById('chat-form'),thread=document.getElementById('thread'),ta=form.querySelector('textarea[name=message]'),btn=document.getElementById('send-btn'),composer=document.getElementById('composer');
-function fit(){ta.style.height='0px';var max=parseFloat(getComputedStyle(ta).maxHeight)||140;ta.style.height=Math.min(ta.scrollHeight,max)+'px';ta.style.overflowY=ta.scrollHeight>max?'auto':'hidden';}
+function fit(){ta.style.height='0px';var max=parseFloat(getComputedStyle(ta).maxHeight)||140;ta.style.height=Math.min(ta.scrollHeight,max)+'px';ta.style.overflowY=ta.scrollHeight>max?'auto':'hidden';btn.disabled=!ta.value.trim();}
 function measure(){if(composer){document.documentElement.style.setProperty('--composer-h',composer.offsetHeight+'px');}}
 ta.addEventListener('input',fit);
 ta.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&e.keyCode!==229){e.preventDefault();if(form.requestSubmit){form.requestSubmit();}else{form.submit();}}});
@@ -66,12 +75,13 @@ form.addEventListener('submit',function(e){
   var data=new FormData(form);data.set('message',text);
   fetch('/chat/send',{method:'POST',body:data,headers:{'Accept':'application/json'}})
     .then(function(r){return r.json();})
-    .then(function(res){dots.remove();if(res.html){var t=document.createElement('template');t.innerHTML=res.html;Array.prototype.forEach.call(t.content.children,function(n){if(!n.classList.contains('me')){thread.appendChild(n);}});}else{fail();}})
+    .then(function(res){dots.remove();if(res.html){var t=document.createElement('template');t.innerHTML=res.html;Array.prototype.forEach.call(Array.from(t.content.children),function(n){if(!n.classList.contains('me')){thread.appendChild(n);}});}else{fail();}})
     .catch(function(){dots.remove();fail();})
-    .then(function(){form.dataset.busy='0';btn.disabled=false;bottom();});
+    .then(function(){form.dataset.busy='0';btn.disabled=!ta.value.trim();bottom();});
 });
 document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){ta.value=c.dataset.fill;fit();ta.focus();});});
 fit();bottom();
 })();
 </script>
+<script src="/static/ask.js" defer></script>
 {% endblock %}

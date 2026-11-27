@@ -6,13 +6,13 @@
   <div class="msg bot entry">
     <div class="amt">{% if p.txn.kind == "income" %}+{% else %}−{% endif %}¥{{ "{:,}".format(p.txn.amount) }}</div>
     <div class="meta"><span class="cat"><i></i>{{ p.txn.category }}</span><span class="sub">{{ p.txn.source or "未入力" }}</span><span class="sub">{{ p.txn.date_label }}</span></div>
+    <form method="post" action="/undo/{{ p.txn.txn_id }}" class="foot">
+      <span>記録しました</span>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit">取り消す</button>
+    </form>
     {% if show_time and m.created_at %}<span class="ts">{{ m.created_at.strftime("%H:%M") }}</span>{% endif %}
   </div>
-  <form method="post" action="/undo/{{ p.txn.txn_id }}" class="under">
-    <span>記録しました</span>
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    <button type="submit">取り消す</button>
-  </form>
 </div>
 {% elif p and p.type == "undone" and p.txn %}
 <div class="msg bot entry undone">
@@ -22,35 +22,30 @@
   {% if show_time and m.created_at %}<span class="ts">{{ m.created_at.strftime("%H:%M") }}</span>{% endif %}
 </div>
 {% elif p and p.type == "proposal" and p.status == "pending" %}
-<div class="msg bot entry pending">
-  <div class="label">この内容で記録しますか？</div>
-  <div class="amt">{% if p.preview.kind == "income" %}+{% else %}−{% endif %}¥{{ "{:,}".format(p.preview.amount) }}</div>
-  <div class="meta"><span class="cat"><i></i>{{ p.preview.category }}</span><span class="sub">{{ p.preview.source or "未入力" }}</span></div>
-  <div class="meta"><span class="sub">{{ p.preview.date_label }}</span></div>
-  {% if p.preview.reason == "date_inferred" %}<p class="warn">日付は推測です。違っていれば「直す」で変更できます。</p>{% endif %}
-  {% if p.preview.reason == "amount_not_in_message" %}<p class="warn">金額がメッセージにありません。</p>{% endif %}
-  <div class="acts">
-    <form method="post" action="/chat/confirm/{{ m.message_id }}">
+<link rel="stylesheet" href="/static/ask.css">
+<div class="msg bot entry swipe" data-state="open" data-modal="confirm" tabindex="0" role="group" aria-labelledby="prop-label-{{ m.message_id }}">
+  <button type="button" class="modal-x" data-modal-close hidden aria-label="閉じる">×</button>
+  <div class="label" id="prop-label-{{ m.message_id }}">この内容で記録しますか？</div>
+  <div class="line">
+    <span class="amt">{% if p.preview.kind == "income" %}+{% else %}−{% endif %}¥{{ "{:,}".format(p.preview.amount) }}</span>
+    <span class="cat"><i></i>{{ p.preview.category }}</span>
+    <span class="sub">{{ p.preview.source or "未入力" }}</span>
+    {% if p.preview.date_short and not p.preview.is_today %}<span class="sub">{{ p.preview.date_short }}</span>{% endif %}
+  </div>
+  {% if p.preview.reason == "date_inferred" %}<p class="warn">日付は推測です</p>{% endif %}
+  {% if p.preview.reason == "amount_not_in_message" %}<p class="warn">金額がメッセージにありません</p>{% endif %}
+  <span class="stamp stamp-left" data-stamp="left">やめる</span>
+  <span class="stamp stamp-right" data-stamp="right">保存</span>
+  <div class="swipe-acts">
+    <form method="post" action="/chat/cancel/{{ m.message_id }}" data-swipe="left">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button type="submit" class="primary">保存する</button>
+      <button type="submit" class="swipe-btn swipe-left">やめる</button>
     </form>
-    <form method="post" action="/chat/cancel/{{ m.message_id }}">
+    <form method="post" action="/chat/confirm/{{ m.message_id }}" data-swipe="right">
       <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button type="submit" class="ghost">やめる</button>
+      <button type="submit" class="swipe-btn swipe-right">保存する</button>
     </form>
   </div>
-  <details class="edit">
-    <summary>直す</summary>
-    <form method="post" action="/chat/confirm/{{ m.message_id }}" class="form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <label>金額<input type="number" name="amount" value="{{ p.preview.amount }}" min="1" inputmode="numeric"></label>
-      <label>日付<input type="date" name="date" value="{{ p.preview.date }}"></label>
-      <label>分類<select name="category_code">
-        {% for c in categories %}<option value="{{ c.code }}" {% if c.category_name == p.preview.category %}selected{% endif %}>{{ c.category_name }}</option>{% endfor %}
-      </select></label>
-      <button type="submit" class="primary">この内容で保存</button>
-    </form>
-  </details>
   {% if show_time and m.created_at %}<span class="ts">{{ m.created_at.strftime("%H:%M") }}</span>{% endif %}
 </div>
 {% elif p and p.type == "answer" and p.data %}
@@ -66,6 +61,8 @@
   {% endif %}
   {% if show_time and m.created_at %}<span class="ts">{{ m.created_at.strftime("%H:%M") }}</span>{% endif %}
 </div>
+{% elif p and p.type == "question" %}
+{% include "_ask.html" %}
 {% else %}
 <div class="msg bot"><p>{{ m.body }}</p>{% if show_time and m.created_at %}<span class="ts">{{ m.created_at.strftime("%H:%M") }}</span>{% endif %}</div>
 {% endif %}

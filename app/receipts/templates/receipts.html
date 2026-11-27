@@ -21,7 +21,7 @@
       <summary>
         <img class="thumb" src="/receipts/{{ card.receipt_id }}/image" alt="取り込んだ写真" width="96" height="96">
         <span class="shot-info">
-          <span class="shot-label">{% if card.mode == "unreadable" %}読み取れません{% else %}確認待ち{% endif %}</span>
+          <span class="shot-label">確認待ち</span>
           <span class="shot-count">{{ index }} / {{ total }}</span>
         </span>
         <span class="shot-more">拡大</span>
@@ -29,50 +29,45 @@
       <div class="shot-full"><img src="/receipts/{{ card.receipt_id }}/image" alt="" loading="lazy"></div>
     </details>
   </div>
-  {% if card.mode == 'unreadable' %}
-  <footer class="form-foot">
-  <div class="ask">
-    <div class="ask-note">
-      <p class="ask-title">お支払いとして読み取れませんでした</p>
-      <p class="ask-sub">レシートの写真でも、支払い画面のスクリーンショットでもかまいません。金額が見える画像を選んでください。</p>
-    </div>
-    <div class="actions">
-      <a class="primary btn-link" href="/chat">もう一度とる</a>
-      <a class="secondary btn-link" href="/receipts?manual=1">手入力で登録</a>
-    </div>
-  </div>
-  <details class="discard">
-    <summary>この画像を捨てる</summary>
-    <form method="post" action="/receipts/{{ card.receipt_id }}/discard" class="discard-panel">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <p class="hint">この画像は元に戻せません。</p>
-      <button type="submit" class="secondary btn-link">捨てる</button>
-    </form>
-  </details>
-  </footer>
-  {% else %}
   {% set shop_value = override.shop or card.data.shop or "" %}
   <footer class="form-foot">
   <form method="post" action="/receipts/{{ card.receipt_id }}/save" class="ask" id="save-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     {% if card.mode == 'ask' %}
-    <p class="ask-title">{% if card.want_amount %}金額を教えてください{% elif card.want_date %}日付を教えてください{% else %}内容を確かめてください{% endif %}</p>
+    <p class="ask-title">{% if card.want_amount %}いくらでしたか？{% elif card.want_date %}日付を教えてください{% else %}内容を確かめてください{% endif %}</p>
     {% endif %}
+{% macro cat_chips() %}
+    <div class="choose">
+      <span class="row-k">分類{% if card.want_category %}<em class="need"> 選んでください</em>{% endif %}</span>
+      <div class="chips">
+        {% for c in categories %}
+        <input type="radio" name="category_code" id="cat{{ loop.index }}" value="{{ c.code }}" {% if c.code == card.data.category_code %}checked{% endif %}>
+        <label for="cat{{ loop.index }}">{{ c.category_name }}</label>
+        {% endfor %}
+      </div>
+    </div>
+{% endmacro %}
     <div class="sheet">
-      <details class="row row-hero{% if card.want_amount %} row-missing{% endif %}"{% if card.want_amount %} open{% endif %}>
+      {% if card.want_amount %}
+      <div class="pad-hero">
+        <input class="pad-input" type="number" name="amount" value="{{ card.display_amount or "" }}" min="1" inputmode="numeric" required aria-label="金額" placeholder="0">
+      </div>
+      {% else %}
+      <details class="row row-hero">
         <summary>
           <span class="row-k">金額</span>
-          <span class="row-v amount">{% if card.want_amount %}<em class="need">教えてください</em>{% else %}¥{{ "{:,}".format(card.display_amount|int) }}{% endif %}</span>
+          <span class="row-v amount">¥{{ "{:,}".format(card.display_amount|int) }}</span>
         </summary>
         <div class="row-edit">
           <span class="yen">¥</span>
-          <input type="number" name="amount" value="{{ card.display_amount or "" }}" min="1" inputmode="numeric"{% if card.want_amount %} required autofocus{% endif %}>
+          <input type="number" name="amount" value="{{ card.display_amount or "" }}" min="1" inputmode="numeric">
         </div>
       </details>
-      <details class="row{% if card.want_date %} row-missing{% endif %}"{% if card.want_date %} open{% endif %}>
+      {% endif %}
+      <details class="row{% if card.want_date %} row-missing{% endif %}">
         <summary>
           <span class="row-k">日付</span>
-          <span class="row-v">{% if card.want_date %}<em class="need">教えてください</em>{% else %}{{ card.date_label }}{% endif %}</span>
+          <span class="row-v">{% if card.want_date %}<em class="need">写真からは読めません</em>{% else %}{{ card.date_label }}{% endif %}</span>
         </summary>
         <div class="row-edit">
           <input type="date" name="date" value="{{ override.date or card.data.date or today }}">
@@ -88,18 +83,33 @@
         </div>
       </details>
     </div>
-    <div class="choose">
-      <span class="row-k">分類{% if card.want_category %}<em class="need"> 選んでください</em>{% endif %}</span>
-      <div class="chips">
-        {% for c in categories %}
-        <input type="radio" name="category_code" id="cat{{ loop.index }}" value="{{ c.code }}" {% if c.code == card.data.category_code %}checked{% endif %}>
-        <label for="cat{{ loop.index }}">{{ c.category_name }}</label>
-        {% endfor %}
+    {% if not card.want_amount %}
+    {{ cat_chips() }}
+    {% endif %}
+    {% if card.want_amount %}
+    <div class="pad" data-pad hidden>
+      {{ cat_chips() }}
+      <div class="pad-keys">
+        <button type="button" data-key="1">1</button>
+        <button type="button" data-key="2">2</button>
+        <button type="button" data-key="3">3</button>
+        <button type="button" data-key="4">4</button>
+        <button type="button" data-key="5">5</button>
+        <button type="button" data-key="6">6</button>
+        <button type="button" data-key="7">7</button>
+        <button type="button" data-key="8">8</button>
+        <button type="button" data-key="9">9</button>
+        <button type="button" data-key="00">00</button>
+        <button type="button" data-key="0">0</button>
+        <button type="button" data-key="del" class="pad-del" aria-label="一文字けす">けす</button>
       </div>
+      <button type="submit" class="primary pad-save">保存する</button>
     </div>
+    {% else %}
     <div class="actions">
       <button type="submit" class="primary">保存する</button>
     </div>
+    {% endif %}
   </form>
   <details class="discard">
     <summary>この画像を捨てる</summary>
@@ -111,6 +121,6 @@
   </details>
   </footer>
   {% endif %}
-  {% endif %}
 </section>
+<script src="/static/pad.js"></script>
 {% endblock %}

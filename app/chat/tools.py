@@ -112,6 +112,19 @@ TOOL_DECLS = [
             "required": ["commitment_id"],
         },
     },
+    {
+        "name": "ask_user",
+        "description": "Ask one short yes/no question only when two choices settle it, for example 食費で記録しますか？. Never use this for a number or a date; ask those in a short text question instead.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "question": {"type": "string", "description": "one short yes/no question"},
+                "yes": {"type": "string", "description": "button label for yes"},
+                "no": {"type": "string", "description": "button label for no"},
+            },
+            "required": ["question", "yes", "no"],
+        },
+    },
 ]
 
 CATEGORY_LABEL = {}
@@ -120,6 +133,8 @@ COMMITMENT_TOOLS = ("create_bill", "create_installment", "list_commitments", "ma
 CREATION_TOOLS = ("create_bill", "create_installment")
 EXPENSE_CODES = ("food", "transport", "daily", "social", "utility", "other")
 COMMITMENT_STATUSES = ("active", "done", "canceled")
+QUESTION_MAX = 200
+LABEL_MAX = 40
 MONTHS_MIN = 1
 MONTHS_MAX = 24
 MAX_ID = 4294967295
@@ -311,6 +326,26 @@ def check_arguments(name, args):
             raise ToolError("missing argument: " + key)
 
 
+def ask_text(value, field, limit):
+    if not isinstance(value, str):
+        raise ToolError(field + " must be a string")
+    text = value.strip()
+    if not text:
+        raise ToolError(field + " must not be empty")
+    if len(text) > limit:
+        raise ToolError(field + " must be at most " + str(limit) + " characters")
+    return text
+
+
+def validate_ask(args):
+    check_arguments("ask_user", args)
+    return {
+        "question": ask_text(args["question"], "question", QUESTION_MAX),
+        "yes": ask_text(args["yes"], "yes", LABEL_MAX),
+        "no": ask_text(args["no"], "no", LABEL_MAX),
+    }
+
+
 def validate_commitment_tool(name, args):
     check_arguments(name, args)
     if name == "create_bill":
@@ -357,6 +392,8 @@ def validate_commitment_tool(name, args):
 
 
 def validate(name, args):
+    if name == "ask_user":
+        return validate_ask(args)
     if name in COMMITMENT_TOOLS:
         return validate_commitment_tool(name, args)
     if name in ("record_expense", "record_income"):

@@ -16,6 +16,8 @@ class Settings:
     secret_key: str = os.environ["SECRET_KEY"]
     gemini_api_key: str = os.environ.get("GEMINI_API_KEY", "")
     gemini_model: str = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite")
+    gemini_thinking: str = os.environ.get("GEMINI_THINKING", "off")
+    gemini_timeout: int = int(os.environ.get("GEMINI_TIMEOUT", "10"))
     ai_mode: str = os.environ.get("AI_MODE", "real")
     ai_daily_cap: int = int(os.environ.get("AI_DAILY_CAP", "200"))
     session_max_age: int = 60 * 60 * 24 * 14

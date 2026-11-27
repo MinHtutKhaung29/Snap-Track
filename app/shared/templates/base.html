@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
   <title>{% block title %}Snap &amp; Track{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234F7075'/%3E%3Ccircle cx='32' cy='34' r='12' fill='none' stroke='%23fff' stroke-width='4'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/static/base.css">
   <link rel="stylesheet" href="/static/chat.css">
   <link rel="stylesheet" href="/static/receipts.css">
@@ -13,25 +14,78 @@
   {% block head %}{% endblock %}
 </head>
 <body>
-  <header class="hdr">
-    <h1 class="hdr-title">{% block heading %}Snap &amp; Track{% endblock %}</h1>
+  <div class="shell">
     {% if user %}
-    <form method="post" action="/logout" class="signout">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-      <button type="submit">ログアウト</button>
-    </form>
+    <aside class="side" id="side" aria-label="メニュー">
+      <a class="side-brand" href="/chat">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="2" y="5" width="20" height="15" rx="4" stroke="currentColor" stroke-width="1.75"/>
+          <circle cx="12" cy="12.5" r="3.75" stroke="currentColor" stroke-width="1.75"/>
+          <path d="M8.5 5.2 9.6 3.5h4.8l1.1 1.7" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
+        </svg>
+        <span>Snap &amp; Track</span>
+      </a>
+      <nav class="nav">
+        <a href="/chat"{% if request.url.path == "/chat" %} aria-current="page"{% endif %}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3v-5.4A8 8 0 0 1 13 4a8 8 0 0 1 8 8Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></svg>
+          <span>チャット</span>
+        </a>
+        <a href="/receipts"{% if request.url.path.startswith("/receipts") %} aria-current="page"{% endif %}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="5" width="20" height="15" rx="4" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="12.5" r="3.75" stroke="currentColor" stroke-width="1.75"/><path d="M8.5 5.2 9.6 3.5h4.8l1.1 1.7" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></svg>
+          <span>写真</span>
+        </a>
+        <a href="/commitments"{% if request.url.path.startswith("/commitments") %} aria-current="page"{% endif %}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.75"/><path d="M8 3v4M16 3v4M3 10h18M9 15l2 2 4-4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>支払い予定</span>
+        </a>
+      </nav>
+      <div class="side-foot">
+        <p class="side-user">{{ user.name }} さん</p>
+        <form method="post" action="/logout" class="signout">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit">ログアウト</button>
+        </form>
+      </div>
+    </aside>
+    <div class="scrim" data-drawer-close></div>
     {% endif %}
-  </header>
-  {% if user %}
-  <nav class="tabs">
-    <a href="/chat"{% if request.url.path == "/chat" %} aria-current="page"{% endif %}>チャット</a>
-    <a href="/receipts"{% if request.url.path.startswith("/receipts") %} aria-current="page"{% endif %}>レシート</a>
-    <a href="/commitments"{% if request.url.path.startswith("/commitments") %} aria-current="page"{% endif %}>支払い予定</a>
-  </nav>
-  {% endif %}
-  <main class="wrap">{% block content %}{% endblock %}</main>
-  <footer class="foot">{% block foot %}{% endblock %}</footer>
+    <div class="shell-main">
+      <header class="hdr">
+        {% if user %}
+        <button class="menu" type="button" aria-label="メニューを開く" aria-expanded="false" aria-controls="side" data-drawer-toggle>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
+        </button>
+        {% endif %}
+        <h1 class="hdr-title">{% block heading %}Snap &amp; Track{% endblock %}</h1>
+      </header>
+      <main class="wrap">{% block content %}{% endblock %}</main>
+      <footer class="foot">{% block foot %}{% endblock %}</footer>
+    </div>
+  </div>
   <script>
+  (function(){
+    var btn=document.querySelector('[data-drawer-toggle]'),side=document.getElementById('side'),scrim=document.querySelector('[data-drawer-close]');
+    if(!btn||!side){return;}
+    var wide=window.matchMedia('(min-width:840px)');
+    function set(open,returnFocus){
+      document.body.dataset.drawer=open?'open':'closed';
+      btn.setAttribute('aria-expanded',open?'true':'false');
+      if(wide.matches||open){side.removeAttribute('inert');}
+      else{side.setAttribute('inert','');}
+      if(!open&&returnFocus){btn.focus();}
+    }
+    function sync(){
+      var open=document.body.dataset.drawer==='open';
+      if(wide.matches||open){side.removeAttribute('inert');}
+      else{side.setAttribute('inert','');}
+      document.body.dataset.drawer=open?'open':'closed';
+    }
+    btn.addEventListener('click',function(){set(document.body.dataset.drawer!=='open',false);});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.body.dataset.drawer==='open'){set(false,true);}});
+    if(scrim){scrim.addEventListener('click',function(){set(false,true);});}
+    if(wide.addEventListener){wide.addEventListener('change',sync);}else if(wide.addListener){wide.addListener(sync);}
+    set(false,false);
+  })();
   (function(){
     var vv=window.visualViewport,root=document.documentElement;
     if(!vv){return;}

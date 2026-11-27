@@ -8,7 +8,8 @@ from app.shared import ai
 SYSTEM = (
     "You read payment evidence for a Japanese personal expense tracker. "
     "The image may be a paper receipt, a photo of one, a screenshot of a payment app, "
-    "a bank transfer confirmation, an order confirmation, or an invoice. "
+    "a bank transfer confirmation, an order confirmation, an invoice, "
+    "or a photo of something the user bought with no price in the picture. "
     "You extract what is actually visible and never guess: a value you cannot read is null."
 )
 
@@ -33,6 +34,9 @@ PROMPT = (
     "- is_payment: true when the image shows money the user actually paid. "
     "A receipt, a payment screenshot, a transfer confirmation are true. "
     "A shopping cart before payment, a price list, a menu, a bank balance, or a chat message is false.\n"
+    "- The image may be an item with no price printed: clothes, a bottle, a snack. "
+    "Then amount is null, is_payment is false, evidence_type is other, "
+    "and source is the shop, brand or item name you can read.\n"
     "- If several different payments appear, use the largest single completed one and say so in note.\n"
     "Return null for any field you cannot read. Never invent a digit."
 )

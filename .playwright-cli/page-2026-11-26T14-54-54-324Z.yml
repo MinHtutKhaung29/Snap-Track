@@ -1,0 +1,18 @@
+- generic [active] [ref=f2e1]:
+  - banner [ref=f2e2]:
+    - heading "写真から記録" [level=1] [ref=f2e3]
+    - button "ログアウト" [ref=f2e5] [cursor=pointer]
+  - navigation [ref=f2e6]:
+    - link "チャット" [ref=f2e7] [cursor=pointer]:
+      - /url: /chat
+    - link "レシート" [ref=f2e8] [cursor=pointer]:
+      - /url: /receipts
+    - link "支払い予定" [ref=f2e9] [cursor=pointer]:
+      - /url: /commitments
+  - main [ref=f2e10]:
+    - generic [ref=f2e12]:
+      - paragraph [ref=f2e13]: 未確認の写真はありません
+      - paragraph [ref=f2e14]: チャットの写真ボタンから追加できます。
+      - link "チャットへ" [ref=f2e15] [cursor=pointer]:
+        - /url: /chat
+  - contentinfo [ref=f2e16]

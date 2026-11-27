@@ -237,6 +237,7 @@ class CommitmentTests(unittest.TestCase):
                 "create_installment",
                 "list_commitments",
                 "mark_paid",
+                "ask_user",
             ],
         )
         today = toolbox.today_jst()

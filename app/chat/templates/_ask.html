@@ -1,0 +1,16 @@
+{% set p = m.payload %}
+{% if p.answer == "yes" %}{% set picked = p.yes %}{% elif p.answer == "no" %}{% set picked = p.no %}{% else %}{% set picked = none %}{% endif %}
+<link rel="stylesheet" href="/static/ask.css">
+<div class="msg bot swipe" data-state="{{ 'answered' if picked is not none else 'open' }}" data-endpoint="/chat/answer/{{ m.message_id }}" data-message-id="{{ m.message_id }}" data-yes="{{ p.yes }}" data-no="{{ p.no }}" data-csrf="{{ csrf_token }}"{% if picked is none %} tabindex="0" role="group" aria-labelledby="ask-q-{{ m.message_id }}"{% endif %}>
+  <p class="swipe-q" id="ask-q-{{ m.message_id }}">{{ p.question }}</p>
+  {% if picked is not none %}
+  <p class="swipe-picked" aria-live="polite">「{{ picked }}」を選びました</p>
+  {% else %}
+  <p class="swipe-hint" data-hint aria-live="polite">左へスワイプで「{{ p.no }}」、右へスワイプで「{{ p.yes }}」。ボタンでも選べます。</p>
+  <div class="swipe-acts">
+    <button type="button" class="swipe-btn swipe-left" data-swipe="left" data-choice="no">{{ p.no }}</button>
+    <button type="button" class="swipe-btn swipe-right" data-swipe="right" data-choice="yes">{{ p.yes }}</button>
+  </div>
+  {% endif %}
+  {% if show_time and m.created_at %}<span class="ts">{{ m.created_at.strftime("%H:%M") }}</span>{% endif %}
+</div>

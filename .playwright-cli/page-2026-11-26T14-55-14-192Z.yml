@@ -1,0 +1,18 @@
+- generic [active] [ref=f3e1]:
+  - banner [ref=f3e2]:
+    - heading "支払い予定" [level=1] [ref=f3e3]
+    - button "ログアウト" [ref=f3e5] [cursor=pointer]
+  - navigation [ref=f3e6]:
+    - link "チャット" [ref=f3e7] [cursor=pointer]:
+      - /url: /chat
+    - link "レシート" [ref=f3e8] [cursor=pointer]:
+      - /url: /receipts
+    - link "支払い予定" [ref=f3e9] [cursor=pointer]:
+      - /url: /commitments
+  - main [ref=f3e10]:
+    - generic [ref=f3e12]:
+      - paragraph [ref=f3e13]: 支払い予定はありません
+      - paragraph [ref=f3e14]: チャットで「家賃 85000円 27日払い」のように話しかけると登録できます。
+      - link "チャットへ" [ref=f3e15] [cursor=pointer]:
+        - /url: /chat
+  - contentinfo [ref=f3e16]

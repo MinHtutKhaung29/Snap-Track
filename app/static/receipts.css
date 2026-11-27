@@ -18,6 +18,7 @@
 .ask-sub{margin:0;font-size:var(--t3);color:var(--muted);line-height:1.6}
 details.row{display:block;padding:0}
 .sheet{margin:0 -16px;border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0}
+@media (min-width:641px){.queue .sheet{margin:0;border-left:1px solid var(--line);border-right:1px solid var(--line);border-radius:16px}}
 .row > summary{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:44px;padding:8px 16px;list-style:none;cursor:pointer}
 .row > summary::-webkit-details-marker{display:none}
 .row-hero > summary{min-height:56px}
@@ -30,12 +31,32 @@ details.row{display:block;padding:0}
 .need{font-style:normal;font-size:var(--t3);font-weight:400;color:var(--warn)}
 .row-edit{display:flex;align-items:baseline;justify-content:flex-end;gap:6px;padding:2px 16px 14px}
 .row-edit .yen{font-size:20px;color:var(--muted)}
-.row-edit input{width:180px;min-height:44px;padding:0 8px;border:0;border-bottom:2px solid var(--accent);border-radius:0;background:none;color:var(--fg);font-family:inherit;font-size:28px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.row-edit input{min-height:44px;padding:0 8px;border:0;border-bottom:2px solid var(--accent);border-radius:0;background:none;color:var(--fg);font-family:inherit;font-size:16px;font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+.row-edit input[type=number]{width:180px;font-size:28px;font-weight:700}
+.row-edit input[type=date],.row-edit input[type=text]{width:100%;max-width:240px}
 .row-edit input::-webkit-outer-spin-button,.row-edit input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .row-edit input:focus{outline:0;border-bottom-color:var(--fg)}
+.pad-hero{display:grid;gap:2px;padding:4px 16px 12px}
+.pad-q{margin:0;font-size:var(--t4);color:var(--muted)}
+.pad-input{width:100%;min-height:64px;padding:0;border:0;border-radius:10px;background:none;color:var(--fg);font-family:inherit;font-size:44px;font-weight:700;letter-spacing:-.02em;text-align:center;font-variant-numeric:tabular-nums;-webkit-appearance:none;appearance:none}
+.pad-input::-webkit-outer-spin-button,.pad-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.pad-input:focus{outline:2px solid var(--accent-fg);outline-offset:2px}
+.pad{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line)}
+.pad[hidden]{display:none}
+.pad-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pad-keys button{min-height:52px;border:1px solid var(--line);border-radius:12px;background:var(--field);color:var(--fg);font-family:inherit;font-size:22px;font-weight:600;cursor:pointer}
+.pad-keys button:active{background:var(--pick-bg)}
+.pad-del{color:var(--muted);font-size:16px}
+.pad-save{min-height:52px;border:0;border-radius:14px;font-family:inherit;font-size:16px;font-weight:600;cursor:pointer}
+body.has-pad .wrap{padding-bottom:340px}
+.pad .choose{padding:0}
+.pad .chips{flex-wrap:nowrap;overflow-x:auto;padding:0 0 2px;scrollbar-width:none}
+.pad .chips::-webkit-scrollbar{display:none}
+.pad .chips label{flex:0 0 auto}
+@media (min-width:840px){.pad{left:248px;padding:12px 24px calc(12px + env(safe-area-inset-bottom))}body.has-pad .wrap{padding-bottom:300px}}
 .chips{display:flex;flex-wrap:wrap;gap:8px;padding:8px 0 4px}
 .chips input{position:absolute;opacity:0;pointer-events:none}
-.chips label{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 14px;border:1px solid var(--line-strong);border-radius:999px;background:var(--field);color:var(--fg);font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap}
+.chips label{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 14px;border:1px solid var(--line-strong);border-radius:999px;background:var(--field);color:var(--fg);font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap}
 .chips label::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--muted);opacity:.45}
 .chips input:checked+label{border-color:var(--accent);background:var(--pick-bg);color:var(--pick-fg)}
 .chips input:checked+label::before{background:var(--pick-dot);opacity:1}

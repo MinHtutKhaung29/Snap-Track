@@ -1,0 +1,127 @@
+- generic [ref=f8e1]:
+  - banner [ref=f8e2]:
+    - heading "チャット" [level=1] [ref=f8e3]
+    - button "ログアウト" [ref=f8e5] [cursor=pointer]
+  - navigation [ref=f8e6]:
+    - link "チャット" [ref=f8e7] [cursor=pointer]:
+      - /url: /chat
+    - link "レシート" [ref=f8e8] [cursor=pointer]:
+      - /url: /receipts
+    - link "支払い予定" [ref=f8e9] [cursor=pointer]:
+      - /url: /commitments
+  - main [ref=f8e10]:
+    - generic [ref=f8e11]:
+      - generic [ref=f8e12]: 今日
+      - generic [ref=f8e14]:
+        - paragraph [ref=f8e15]: 今日 ランチ 850円
+        - generic [ref=f8e16]: 13:50
+      - generic [ref=f8e17]:
+        - generic [ref=f8e18]:
+          - generic [ref=f8e19]: −¥850
+          - generic [ref=f8e20]:
+            - generic [ref=f8e21]: 食費
+            - generic [ref=f8e23]: ランチ
+            - generic [ref=f8e24]: 2026年11月26日（木）
+          - generic [ref=f8e25]: 13:50
+        - generic [ref=f8e26]:
+          - generic [ref=f8e27]: 記録しました
+          - button "取り消す" [ref=f8e28] [cursor=pointer]
+      - generic [ref=f8e29]:
+        - paragraph [ref=f8e30]: 明日 カフェ 420円
+        - generic [ref=f8e31]: 13:54
+      - generic [ref=f8e32]:
+        - paragraph [ref=f8e33]: うまく理解できませんでした。金額と日付をもう一度教えてください。
+        - generic [ref=f8e34]: 13:55
+      - generic [ref=f8e35]:
+        - paragraph [ref=f8e36]: ランチ
+        - generic [ref=f8e37]: 14:15
+      - generic [ref=f8e38]:
+        - generic [ref=f8e39]:
+          - generic [ref=f8e40]: −¥850
+          - generic [ref=f8e41]:
+            - generic [ref=f8e42]: 食費
+            - generic [ref=f8e44]: ランチ
+            - generic [ref=f8e45]: 2026年11月26日（木）
+          - generic [ref=f8e46]: 14:15
+        - generic [ref=f8e47]:
+          - generic [ref=f8e48]: 記録しました
+          - button "取り消す" [ref=f8e49] [cursor=pointer]
+      - generic [ref=f8e50]:
+        - paragraph [ref=f8e51]: ドラッグストア 1200円
+        - generic [ref=f8e52]: 14:20
+      - generic [ref=f8e53]:
+        - generic [ref=f8e54]:
+          - generic [ref=f8e55]: −¥1,200
+          - generic [ref=f8e56]:
+            - generic [ref=f8e57]: 日用品
+            - generic [ref=f8e59]: ドラッグストア
+            - generic [ref=f8e60]: 2026年11月26日（木）
+          - generic [ref=f8e61]: 14:20
+        - generic [ref=f8e62]:
+          - generic [ref=f8e63]: 記録しました
+          - button "取り消す" [ref=f8e64] [cursor=pointer]
+      - generic [ref=f8e65]:
+        - paragraph [ref=f8e66]: 5000円 もらった
+        - generic [ref=f8e67]: 14:21
+      - generic [ref=f8e68]:
+        - paragraph [ref=f8e69]: 5000円の収入を「その他」として記録しますか？
+        - paragraph [ref=f8e70]: 「はい」を選びました
+        - generic [ref=f8e71]: 14:21
+      - generic [ref=f8e72]:
+        - paragraph [ref=f8e73]: はい
+        - generic [ref=f8e74]: 14:23
+      - generic [ref=f8e75]:
+        - generic [ref=f8e76]:
+          - generic [ref=f8e77]: +¥5,000
+          - generic [ref=f8e78]:
+            - generic [ref=f8e79]: その他収入
+            - generic [ref=f8e81]: もらったお金
+            - generic [ref=f8e82]: 2026年11月26日（木）
+          - generic [ref=f8e83]: 14:23
+        - generic [ref=f8e84]:
+          - generic [ref=f8e85]: 記録しました
+          - button "取り消す" [ref=f8e86] [cursor=pointer]
+      - generic [ref=f8e87]:
+        - paragraph [ref=f8e88]: ランチ 850円
+        - generic [ref=f8e89]: 17:07
+      - generic [ref=f8e90]:
+        - generic [ref=f8e91]:
+          - generic [ref=f8e92]: −¥850
+          - generic [ref=f8e93]:
+            - generic [ref=f8e94]: 食費
+            - generic [ref=f8e96]: ランチ
+            - generic [ref=f8e97]: 2026年11月26日（木）
+          - generic [ref=f8e98]: 17:07
+        - generic [ref=f8e99]:
+          - generic [ref=f8e100]: 記録しました
+          - button "取り消す" [ref=f8e101] [cursor=pointer]
+      - generic [ref=f8e102]:
+        - paragraph [ref=f8e103]: コーヒー 380円
+        - generic [ref=f8e104]: 17:09
+      - group "この内容で記録しますか？" [ref=f8e105]:
+        - generic [ref=f8e107]: −¥380
+        - generic [ref=f8e108]:
+          - generic [ref=f8e109]: 食費
+          - generic [ref=f8e111]: コーヒー
+        - generic [ref=f8e112]: 2026年11月26日（木）
+        - paragraph [ref=f8e114]: 日付は推測です。違っていれば「直す」で変更できます。
+        - paragraph [ref=f8e115]: 左右にスワイプ、またはタップで選ぶ
+        - generic [ref=f8e116]:
+          - button "やめる" [ref=f8e118] [cursor=pointer]
+          - button "保存する" [ref=f8e120] [cursor=pointer]
+        - group [ref=f8e121]:
+          - generic "直す" [ref=f8e122] [cursor=pointer]
+          - option "食費" [selected]
+          - option "交通費"
+          - option "日用品"
+          - option "交際費"
+          - option "光熱費"
+          - option "その他"
+        - generic [ref=f8e123]: 17:09
+      - paragraph [ref=f8e139]: ランチ 850円
+    - generic [ref=f8e125]:
+      - generic [ref=f8e126]:
+        - generic "レシートを撮る" [ref=f8e128] [cursor=pointer]
+        - textbox "今日 ランチ 850円" [active] [ref=f8e133]
+      - button "送信" [disabled] [ref=f8e134]
+  - contentinfo [ref=f8e137]

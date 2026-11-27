@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import date
 
 from app.commitments import store as commitment_store
@@ -14,7 +15,9 @@ SYSTEM = (
     "あなたは個人のお金管理アプリ「Snap & Track」の中のアシスタントです。"
     "今日は {today} です。ユーザーは日本語・英語・混在で話します。"
     "金額は必ずツールで記録します。金額・日付・カテゴリを推測してはいけません。"
-    "ユーザーが金額を言わない場合は、ツールを呼ばずに短い質問を返してください。"
+    "必要な金額・日付が分からないときは、短い文章で1つだけ質問してください（例: 金額はいくらですか？）。"
+    "カテゴリや記録の可否のように、はい/いいえで決まる確認は文章ではなく必ず ask_user を呼んでください。"
+    "カテゴリが2つ以上あり得る場合や、支出か収入か決められない場合は、提案を作る前に ask_user で1回だけ確認してください。"
     "カテゴリは次のコードだけを使います: expense=food,transport,daily,social,utility,other / income=salary,support,other_income。"
     "雑談やお金と関係ない質問には、お金の記録を手伝うことだけできると短く答えてください。"
     "返答は日本語で、1〜2文の短い文にしてください。"
@@ -117,28 +120,45 @@ def thread(user_id):
     return rows
 
 
+LAST_TIMINGS = {}
+
+
 def handle_turn(user_id, text):
+    started = time.perf_counter()
+    marks = {"store_ms": 0, "history_ms": 0, "model_ms": 0}
+
+    def finish(result):
+        LAST_TIMINGS.clear()
+        LAST_TIMINGS.update(dict(marks, total_ms=round((time.perf_counter() - started) * 1000)))
+        return result
+
     text = (text or "").strip()
     if not text:
-        return {"ok": False, "error": "empty"}
+        return finish({"ok": False, "error": "empty"})
     store(user_id, "user", text)
+    marks["store_ms"] = round((time.perf_counter() - started) * 1000)
 
     if not check_quota(user_id):
         store(user_id, "assistant", "本日の利用回数の上限に達しました。", {"type": "error", "code": "quota"})
-        return {"ok": False, "error": "quota"}
+        return finish({"ok": False, "error": "quota"})
 
     contents = load_history(user_id)
+    marks["history_ms"] = round((time.perf_counter() - started) * 1000 - marks["store_ms"])
+
+    model_started = time.perf_counter()
     try:
         bump_quota(user_id)
         result = ai.generate(system_prompt(user_id), contents, tool_defs())
     except ai.AIError as exc:
+        marks["model_ms"] = round((time.perf_counter() - model_started) * 1000)
         store(user_id, "assistant", "AIに接続できませんでした。少し待ってからもう一度お試しください。", {"type": "error", "code": exc.code})
-        return {"ok": False, "error": exc.code}
+        return finish({"ok": False, "error": exc.code})
+    marks["model_ms"] = round((time.perf_counter() - model_started) * 1000)
 
     if not result["calls"]:
         body = result["text"] or "うまく理解できませんでした。もう一度お試しください。"
         store(user_id, "assistant", body, {"type": "text"})
-        return {"ok": True, "type": "text"}
+        return finish({"ok": True, "type": "text"})
 
     call = result["calls"][0]
     name = call.get("name")
@@ -148,24 +168,33 @@ def handle_turn(user_id, text):
         normalized = toolbox.validate(name, args)
     except toolbox.ToolError as exc:
         store(user_id, "assistant", "うまく理解できませんでした。金額と日付をもう一度教えてください。", {"type": "error", "code": "invalid", "detail": str(exc)})
-        return {"ok": False, "error": "invalid"}
+        return finish({"ok": False, "error": "invalid"})
+
+    if name == "ask_user":
+        return finish(ask_question(user_id, normalized))
 
     if name in toolbox.CREATION_TOOLS:
-        return propose_creation(user_id, name, args, normalized)
+        return finish(propose_creation(user_id, name, args, normalized))
 
     if name == "list_commitments":
-        return answer_commitments(user_id, normalized)
+        return finish(answer_commitments(user_id, normalized))
 
     if name == "mark_paid":
-        return propose_payment(user_id, normalized)
+        return finish(propose_payment(user_id, normalized))
 
     if name == "query_money":
         data = toolbox.execute("query_money", normalized, user_id)
         body = format_answer(data)
         store(user_id, "assistant", body, {"type": "answer", "data": data})
-        return {"ok": True, "type": "answer"}
+        return finish({"ok": True, "type": "answer"})
 
+    return finish(settle_record(user_id, name, args, normalized, text))
+
+
+def settle_record(user_id, name, args, normalized, text):
     reason = toolbox.needs_confirmation(name, normalized, text)
+    if reason == "date_inferred" and normalized["txn_date"] == date.today():
+        reason = None
     if reason:
         preview = {
             "kind": normalized["kind"],
@@ -174,6 +203,8 @@ def handle_turn(user_id, text):
             "source": normalized["source"],
             "category": normalized["category"]["category_name"],
             "date_label": toolbox.jp_date(normalized["txn_date"]),
+            "date_short": "{}/{}".format(normalized["txn_date"].month, normalized["txn_date"].day),
+            "is_today": normalized["txn_date"] == toolbox.today_jst(),
             "reason": reason,
         }
         body = "この内容で記録しますか？"
@@ -189,6 +220,23 @@ def handle_turn(user_id, text):
     body = "記録しました: " + describe(saved)
     store(user_id, "assistant", body, {"type": "saved", "txn": saved})
     return {"ok": True, "type": "saved", "txn": saved}
+
+
+def ask_question(user_id, normalized):
+    question = normalized["question"]
+    store(
+        user_id,
+        "assistant",
+        question,
+        {
+            "type": "question",
+            "question": question,
+            "yes": normalized["yes"],
+            "no": normalized["no"],
+            "answer": None,
+        },
+    )
+    return {"ok": True, "type": "question"}
 
 
 def propose_creation(user_id, name, args, normalized):
